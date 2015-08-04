@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 type RaintankProbeCheck interface {
@@ -20,7 +21,7 @@ func main() {
 	var port int
 	flag.IntVar(&port, "p", 8080, "TCP port to listen on")
 	flag.Parse()
-	fmt.Println("raintank-probe server starting up.")
+	fmt.Println("raintank-probe server starting up on port " + strconv.Itoa(port))
 	err := http.ListenAndServe(fmt.Sprintf("127.0.0.1:%d", port), nil)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
