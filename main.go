@@ -67,8 +67,8 @@ func GetCheck(checkType string, body []byte) (RaintankProbeCheck, error) {
 	switch checkType {
 	case "ping":
 		return checks.NewRaintankPingProbe(body)
-	//case "dns":
-	//	return checks.NewRaintankDnsProbe(body)
+	case "dns":
+		return checks.NewRaintankDnsProbe(body)
 	default:
 		return nil, fmt.Errorf("unknown check type. " + checkType)
 	}
