@@ -11,8 +11,11 @@ import (
 	"time"
 )
 
+// Number of pings to send to the host.
 const count = 5
 
+// results. we use pointers so that missing data will be
+// encoded as 'null' in the json response.
 type PingResult struct {
 	Loss  *float64 `json:"loss"`
 	Min   *float64 `json:"min"`
@@ -23,11 +26,13 @@ type PingResult struct {
 	Error *string  `json:"error"`
 }
 
+// Our check definition.
 type RaintankProbePing struct {
 	Hostname string      `json:"hostname"`
 	Result   *PingResult `json:"-"`
 }
 
+// parse the json request body to build our check definition.
 func NewRaintankPingProbe(body []byte) (*RaintankProbePing, error) {
 	p := RaintankProbePing{}
 	err := json.Unmarshal(body, &p)
@@ -37,10 +42,12 @@ func NewRaintankPingProbe(body []byte) (*RaintankProbePing, error) {
 	return &p, nil
 }
 
+// return the results of the check
 func (p *RaintankProbePing) Results() interface{} {
 	return p.Result
 }
 
+// run the check. this is executed in a goroutine.
 func (p *RaintankProbePing) Run() error {
 	p.Result = &PingResult{}
 

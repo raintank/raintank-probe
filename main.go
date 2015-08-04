@@ -35,11 +35,18 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := RunCheck(checkType, body)
+	check, err := GetCheck(checkType, body)
 	if err != nil {
 		sendError(w, 500, err)
 		return
 	}
+	result, err := RunCheck(check)
+	if err != nil {
+		sendError(w, 500, err)
+		return
+	}
+
+	//encode the result as a JSON string.
 	json, err := json.Marshal(result)
 	if err != nil {
 		sendError(w, 500, fmt.Errorf("failed to convert results to json: "+err.Error()))
@@ -56,27 +63,26 @@ func sendError(w http.ResponseWriter, code int, err error) {
 	return
 }
 
-//run the check in a goroutine.
-func RunCheck(checkType string, body []byte) (interface{}, error) {
-	resultChan := make(chan error)
-	var check RaintankProbeCheck
-	var err error
-
+func GetCheck(checkType string, body []byte) (RaintankProbeCheck, error) {
 	switch checkType {
 	case "ping":
-		check, err = checks.NewRaintankPingProbe(body)
+		return checks.NewRaintankPingProbe(body)
 	//case "dns":
-	//#	result, err = checks.Dns(body)
+	//	return checks.NewRaintankDnsProbe(body)
 	default:
 		return nil, fmt.Errorf("unknown check type. " + checkType)
 	}
 
+}
+
+func RunCheck(check RaintankProbeCheck) (interface{}, error) {
+	resultChan := make(chan error)
 	//run the check in a goroutine.
 	go func() {
 		//push the return into the resultChan
 		resultChan <- check.Run()
 	}()
 
-	err = <-resultChan
+	err := <-resultChan
 	return check.Results(), err
 }
