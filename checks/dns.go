@@ -42,7 +42,7 @@ type RaintankProbeDns struct {
 	RecordName string        `json:"name"`
 	RecordType DnsRecordType `json:"type"`
 	Server     string        `json:"server"`
-	Port       int           `json:"port"`
+	Port       string        `json:"port"`
 	Protocol   string        `json:"protocol"`
 	Result     *DnsResult    `json:"-"`
 }
@@ -53,6 +53,9 @@ func NewRaintankDnsProbe(body []byte) (*RaintankProbeDns, error) {
 	err := json.Unmarshal(body, &p)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse settings. " + err.Error())
+	}
+	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
+		return nil, fmt.Errorf("failed to parse settings. Invalid port")
 	}
 	return &p, nil
 }
@@ -81,7 +84,7 @@ func (p *RaintankProbeDns) Run() error {
 		//trim any leading/training whitespace.
 		server := strings.Trim(s, " ")
 
-		srvPort := server + ":" + strconv.Itoa(p.Port)
+		srvPort := server + ":" + p.Port
 		start := time.Now()
 		r, t, err := c.Exchange(&m, srvPort)
 		if err != nil || r == nil {
