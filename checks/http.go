@@ -9,6 +9,7 @@ import (
 	"io"
 	"time"
 	"bytes"
+	"strconv"
 )
 
 type HttpResult struct {

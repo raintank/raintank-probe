@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/raintank/raintank-probe/checks"
+	"github.com/AriaEdo/raintank-probe/checks"
 	"io/ioutil"
 	"net/http"
 	"os"
