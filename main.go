@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/AriaEdo/raintank-probe/checks"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/AriaEdo/raintank-probe/checks"
 )
 
 type RaintankProbeCheck interface {
@@ -71,7 +72,7 @@ func GetCheck(checkType string, body []byte) (RaintankProbeCheck, error) {
 	case "dns":
 		return checks.NewRaintankDnsProbe(body)
 	case "http":
-		return checks.NewRaintankHttpProbe(body)
+		return checks.NewRaintankHTTPProbe(body)
 	default:
 		return nil, fmt.Errorf("unknown check type. " + checkType)
 	}

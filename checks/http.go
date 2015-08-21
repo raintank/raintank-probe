@@ -1,47 +1,45 @@
 package checks
 
 import (
-	//"github.com/miekg/dns"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
-	"io"
-	"time"
-	"bytes"
 	"strconv"
+	"time"
+
+	"github.com/miekg/dns"
 )
 
-type HttpResult struct {
-	Dns        *float64 `json:"dns"`
+// HTTPResult struct
+type HTTPResult struct {
+	DNS        *float64 `json:"dns"`
 	Connect    *float64 `json:"connect"`
 	Send       *float64 `json:"send"`
 	Wait       *float64 `json:"wait"`
 	Recv       *float64 `json:"recv"`
 	Total      *float64 `json:"total"`
-	DataLength      int `json:"dataLength"`
-	StatusCode      *float64 `json:"statusCode"`
-	// Connect    *time.Duration `json:"connect"`
-	// Send       *time.Duration `json:"send"`
-	// Wait       *time.Duration `json:"wait"`
-	// Recv       *time.Duration `json:"recv"`
-	// Total      *time.Duration `json:"total"`
+	DataLength int      `json:"dataLength"`
+	StatusCode *float64 `json:"statusCode"`
 	Error      *string  `json:"error"`
 }
 
-// Our check definition.
-type RaintankProbeHttp struct {
-	Host string         `json:"host"`
-    Path string         `json:"path"`
-    Port string         `json:"port"`
-    Method string       `json:"method"`
-    Headers string      `json:"headers"`
-    ExpectRegex string  `json:"expectRegex"`
-	Result *HttpResult  `json:"-"`
+// RaintankProbeHTTP struct.
+type RaintankProbeHTTP struct {
+	Host        string      `json:"host"`
+	Path        string      `json:"path"`
+	Port        string      `json:"port"`
+	Method      string      `json:"method"`
+	Headers     string      `json:"headers"`
+	ExpectRegex string      `json:"expectRegex"`
+	Result      *HTTPResult `json:"-"`
 }
 
-func NewRaintankHttpProbe(body []byte) (*RaintankProbeHttp, error) {
-	p := RaintankProbeHttp{}
+// NewRaintankHTTPProbe json check
+func NewRaintankHTTPProbe(body []byte) (*RaintankProbeHTTP, error) {
+	p := RaintankProbeHTTP{}
 	err := json.Unmarshal(body, &p)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse settings. " + err.Error())
@@ -52,41 +50,61 @@ func NewRaintankHttpProbe(body []byte) (*RaintankProbeHttp, error) {
 	return &p, nil
 }
 
-func (p *RaintankProbeHttp) Results() interface{} {
+// Results interface
+func (p *RaintankProbeHTTP) Results() interface{} {
 	return p.Result
 }
 
-func (p *RaintankProbeHttp) Run() error {
-    p.Result = &HttpResult{}
-	fmt.Println("connect")
-    request, err := http.NewRequest(p.Method, p.Host + p.Path, nil)
+// Run checking
+func (p *RaintankProbeHTTP) Run() error {
+	p.Result = &HTTPResult{}
+
+	request, err := http.NewRequest(p.Method, p.Host+p.Path, nil)
 	if err != nil {
 		msg := "connection closed" //err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
-	request.Header.Set("Connection", "close")
-	start := time.Now()
 
-	// Connect
-	conn, err := net.Dial("tcp", p.Host + ":" + p.Port)
+	start := time.Now()
+	// Dialing
+	request.Header.Set("Connection", "close")
+	conn, err := net.Dial("tcp", p.Host+":"+p.Port)
 	if err != nil {
 		msg := err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
 	defer conn.Close()
-	result := float64(time.Since(start))
-	p.Result.Connect = &result
+	duration := time.Since(start).Seconds()
+	p.Result.Connect = &duration
+
+	// DNS
+	step := time.Now()
+	server := "8.8.8.8"
+	c := dns.Client{}
+	m := dns.Msg{}
+	m.SetQuestion(p.Host, dns.TypeA)
+	_, t, err := c.Exchange(&m, server+":53")
+	if err != nil {
+		msg := err.Error()
+		p.Result.Error = &msg
+		return nil
+	}
+	if t == 0 {
+		t = time.Since(start)
+	}
+	duration = t.Seconds()
+	p.Result.DNS = &duration
 
 	// Send
-	step := time.Now()
+	step = time.Now()
 	if err := request.Write(conn); err != nil {
 		msg := err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
-	send := float64(time.Since(step))
+	send := time.Since(step).Seconds()
 	p.Result.Send = &send
 
 	// Wait
@@ -99,7 +117,7 @@ func (p *RaintankProbeHttp) Run() error {
 		return nil
 	}
 	p.Result.DataLength = bytesRead
-	wait := float64(time.Since(step))
+	wait := time.Since(step).Seconds()
 	p.Result.Wait = &wait
 
 	// Receive
@@ -112,10 +130,10 @@ func (p *RaintankProbeHttp) Run() error {
 		p.Result.Error = &msg
 		return nil
 	}
-	recv := float64(time.Since(step))
+	recv := time.Since(step).Seconds()
 	p.Result.Recv = &recv
 
-	total := float64(time.Since(start))
+	total := time.Since(start).Seconds()
 	p.Result.Total = &total
 	return nil
 }
