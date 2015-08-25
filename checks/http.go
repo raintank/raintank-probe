@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/miekg/dns"
 )
 
 // HTTPResult struct
@@ -81,20 +79,13 @@ func (p *RaintankProbeHTTP) Run() error {
 
 	// DNS
 	step := time.Now()
-	server := "8.8.8.8"
-	c := dns.Client{}
-	m := dns.Msg{}
-	m.SetQuestion(p.Host, dns.TypeA)
-	_, t, err := c.Exchange(&m, server+":53")
-	if err != nil {
-		msg := err.Error()
+	addrs, err := net.LookupHost(p.Host)
+	if err != nil || len(addrs) < 1 {
+		msg := "failed to resolve hostname to IP."
 		p.Result.Error = &msg
 		return nil
 	}
-	if t == 0 {
-		t = time.Since(start)
-	}
-	duration = t.Seconds()
+	duration = time.Since(step).Seconds()
 	p.Result.DNS = &duration
 
 	// Send
