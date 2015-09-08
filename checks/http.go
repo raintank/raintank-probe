@@ -7,10 +7,11 @@ import (
 	"time"
 	"net"
 	"net/http"
+	"io"
 	"io/ioutil"
 	"bufio"
 	"strings"
-	//compress/gzip
+	"compress/gzip"
 )
 
 // HTTPResult struct
@@ -62,8 +63,8 @@ func (p *RaintankProbeHTTP) Run() error {
 	p.Result = &HTTPResult{}
 	
 	// reader
-	reader := bufio.NewReader(strings.NewReader(p.Method+" / HTTP/1.0\r\nHost: "+p.Host+"\r\n\r\n"))
-	request, err := http.NewRequest(p.Method, "http://"+p.Host+p.Path, reader)
+	bufReader := bufio.NewReader(strings.NewReader(p.Method+" / HTTP/1.0\r\nHost: "+p.Host+"\r\n\r\n"))
+	request, err := http.NewRequest(p.Method, "http://"+p.Host+p.Path, bufReader)
 	request.Header.Set("Connection", "close")
 	request.Header.Set("Accept-Encpoding", "gzip")
 	request.Header.Set("User-Agent", "raintank-probe")
@@ -122,54 +123,52 @@ func (p *RaintankProbeHTTP) Run() error {
 	// Receive
 	step = time.Now()
 	client := &http.Client{}
-	response, _ := client.Do(request)
+	response, err := client.Do(request)
+	defer response.Body.Close()
+	if err != nil {
+		msg := err.Error()
+		p.Result.Error = &msg
+		return nil
+	}
+	
+	// Error response
 	statusCode := float64(response.StatusCode)
-    p.Result.StatusCode = &statusCode 
-	body, err := ioutil.ReadAll(response.Body)
+	if statusCode >= 400 {
+		msg := "Invalid status code " + strconv.Itoa(response.StatusCode);
+		p.Result.Error = &msg
+		return nil
+	}
+    p.Result.StatusCode = &statusCode
+	
+	// Handle gzip
+	var reader io.ReadCloser
+	switch response.Header.Get("Content-Encoding") {
+		case "gzip":
+			reader, err = gzip.NewReader(response.Body)
+			defer reader.Close()
+			if err != nil {
+				msg := err.Error()
+				p.Result.Error = &msg
+				return nil
+			}
+		default:
+			reader = response.Body
+	} 
+	body, err := ioutil.ReadAll(reader)
+	if err != nil {
+		msg := err.Error()
+		p.Result.Error = &msg
+		return nil
+	}
 	dataLength := float64(len(body))
 	p.Result.DataLength = &dataLength
-	
-	log.Println(response)
-    // uri, err := url.ParseRequestURI("http://" + p.Host + ":" + p.Port)
-	// uri.Path = p.Path
-	
-	// data := url.Values{}
-    // uriStr := fmt.Sprintf("%v", uri)
-	
-	// 
-    // req, _ := http.NewRequest(p.Method, uriStr, bytes.NewBufferString(data.Encode()))
-	// req.Header.Set("Connection", "close")
-	// client := &http.Client{}
-    // response, _ := client.Do(request)
-	
-	// // length := response.Header.Get("Content-Length")
-	// // fmt.Println(length)
-	
-	// body, err := ioutil.ReadAll(response.Body)
-    // fmt.Println(string(body))
-	// header := []byte(p.Method + " " + p.Path + " HTTP/1.1\r\nHost: " + p.Host + "\r\n\r\n")
-    // conn.Write(header)
-	
-	// scanner := bufio.NewScanner(conn)
-    // firstLine := true
-    // bytesRead := ""
     
-    // for scanner.Scan() {
-    //     if firstLine == true {
-    //         firstLine = false
-    //         //p.Result.StatusCode = scanner.Text()
-    //     }
-    //     bytesRead += scanner.Text()
-    // }
 	if err != nil {
 		msg := err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
 	recv := time.Since(step).Seconds() * 1000
-	
-	// dataLength := float64(response.ContentLength)
-	// p.Result.DataLength = &dataLength
 	p.Result.Recv = &recv
 	
 	// total time
