@@ -9,8 +9,11 @@ import (
 	"net/http"
 	"io"
 	"io/ioutil"
-	"bufio"
+	"fmt"
 	"strings"
+	"bufio"
+	"bytes"
+	"regexp"
 	"compress/gzip"
 )
 
@@ -50,6 +53,9 @@ func NewRaintankHTTPProbe(body []byte) (*RaintankProbeHTTP, error) {
 		log.Fatal("failed to parse settings. Invalid port")
 		return nil, err
 	}
+	if !strings.HasPrefix(p.Path, "/") {
+		return nil, fmt.Errorf("invalid path. must start with /")
+	}
 	return &p, nil
 }
 
@@ -58,15 +64,20 @@ func (p *RaintankProbeHTTP) Results() interface{} {
 	return p.Result
 }
 
+
 // Run checking
 func (p *RaintankProbeHTTP) Run() error {
 	p.Result = &HTTPResult{}
 	
+	if p.Method == "" {
+		p.Method = "GET"
+	}
+	
 	// reader
-	bufReader := bufio.NewReader(strings.NewReader(p.Method+" / HTTP/1.0\r\nHost: "+p.Host+"\r\n\r\n"))
-	request, err := http.NewRequest(p.Method, "http://"+p.Host+p.Path, bufReader)
+	url := fmt.Sprintf("http://%s:%s%s", p.Host, p.Port, p.Path)
+	request, err := http.NewRequest(p.Method, url, nil)
 	request.Header.Set("Connection", "close")
-	request.Header.Set("Accept-Encpoding", "gzip")
+	request.Header.Set("Accept-Encoding", "gzip")
 	request.Header.Set("User-Agent", "raintank-probe")
 	
 	if err != nil {
@@ -106,30 +117,42 @@ func (p *RaintankProbeHTTP) Run() error {
 	}
 	send := time.Since(step).Seconds() * 1000
 	p.Result.Send = &send
-	
-	// Wait
-	step = time.Now()
-	firstByte := make([]byte, 1)
-	_, err = conn.Read(firstByte)
-	if err != nil {
-		msg := err.Error()
-		p.Result.Error = &msg
-		return nil
-	}
-	wait := time.Since(step).Seconds() * 1000
-	p.Result.Wait = &wait
 	defer conn.Close()
 	
-	// Receive
+	// Wait & Receive
+	buf := &bytes.Buffer{}
+	data := make([]byte, 1)
+	first := true
 	step = time.Now()
-	client := &http.Client{}
-	response, err := client.Do(request)
-	defer response.Body.Close()
-	if err != nil {
-		msg := err.Error()
-		p.Result.Error = &msg
-		return nil
+	for {
+		n, err := conn.Read(data)
+		if err != nil {
+			if err != io.EOF {
+				msg := "Read error"
+				p.Result.Error = &msg
+				return nil
+			}
+			break
+		}
+		if first == true {
+			wait := time.Since(step).Seconds() * 1000
+			p.Result.Wait = &wait
+			first = false
+		}
+		buf.Write(data[:n])
 	}
+	recv := time.Since(step).Seconds() * 1000
+	/* 
+		Total time 
+	*/
+	total := time.Since(start).Seconds() * 1000
+	p.Result.Total = &total
+	
+	p.Result.Recv = &recv
+	defer conn.Close()
+	
+	readbuffer := bytes.NewBuffer(buf.Bytes())
+	response, err := http.ReadResponse(bufio.NewReader(readbuffer), request)
 	
 	// Error response
 	statusCode := float64(response.StatusCode)
@@ -140,40 +163,67 @@ func (p *RaintankProbeHTTP) Run() error {
 	}
     p.Result.StatusCode = &statusCode
 	
-	// Handle gzip
+	if err != nil {
+		msg := err.Error()
+		p.Result.Error = &msg
+		return nil
+	}
+	
 	var reader io.ReadCloser
-	switch response.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(response.Body)
-			defer reader.Close()
-			if err != nil {
-				msg := err.Error()
-				p.Result.Error = &msg
-				return nil
-			}
-		default:
-			reader = response.Body
-	} 
+	if p.ExpectRegex != "" {
+		// Handle gzip
+		switch response.Header.Get("Content-Encoding") {
+			case "gzip":
+				reader, err = gzip.NewReader(response.Body)
+				defer reader.Close()
+				if err != nil {
+					msg := err.Error()
+					p.Result.Error = &msg
+					return nil
+				}
+			default:
+				reader = response.Body
+		}
+	}else{
+		reader = response.Body
+	}
+	
+	defer response.Body.Close()
 	body, err := ioutil.ReadAll(reader)
 	if err != nil {
 		msg := err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
-	dataLength := float64(len(body))
-	p.Result.DataLength = &dataLength
-    
+	
+	// Data Length
+	dataLength := float64(0)
+	if dataLength, err = strconv.ParseFloat(response.Header.Get("Content-Length"), 64); dataLength < 1 || err != nil {
+		dataLength = float64(len(body))
+	}
+    p.Result.DataLength = &dataLength
+	
 	if err != nil {
 		msg := err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
-	recv := time.Since(step).Seconds() * 1000
-	p.Result.Recv = &recv
 	
-	// total time
-	total := time.Since(start).Seconds() * 1000
-	p.Result.Total = &total
+	// Regex
+	if p.ExpectRegex != "" {
+		rgx, err := regexp.Compile(p.ExpectRegex)
+		if err != nil {
+			msg := err.Error()
+			p.Result.Error = &msg
+			return nil
+		}
+		
+		if rgx.MatchString(string(body)) {
+			// return ?
+		}else{
+			// return ?
+		}
+    }
 	
 	return nil
 }
