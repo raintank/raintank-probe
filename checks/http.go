@@ -99,18 +99,7 @@ func (p *RaintankProbeHTTP) Run() error {
 		return nil
 	}
 	
-	// Dialing
-	start := time.Now()
-	conn, err := net.Dial("tcp", p.Host+":"+p.Port)
-	if err != nil {
-		msg := err.Error()
-		p.Result.Error = &msg
-		return nil
-	}
-	duration := time.Since(start).Seconds() * 1000
-	p.Result.Connect = &duration
-	
-	// DNS
+	// DNS lookup
 	step := time.Now()
 	addrs, err := net.LookupHost(p.Host)
 	if err != nil || len(addrs) < 1 {
@@ -118,8 +107,19 @@ func (p *RaintankProbeHTTP) Run() error {
 		p.Result.Error = &msg
 		return nil
 	}
-	duration = time.Since(step).Seconds() * 1000
-	p.Result.DNS = &duration
+	dnsResolve := time.Since(step).Seconds() * 1000
+	p.Result.DNS = &dnsResolve
+	
+	// Dialing
+	start := time.Now()
+	conn, err := net.Dial("tcp", addrs[0]+":"+p.Port)
+	if err != nil {
+		msg := err.Error()
+		p.Result.Error = &msg
+		return nil
+	}
+	connecting := time.Since(start).Seconds() * 1000
+	p.Result.Connect = &connecting
 
 	// Send
 	step = time.Now()
@@ -134,12 +134,10 @@ func (p *RaintankProbeHTTP) Run() error {
 	
 	// Wait & Receive
 	step = time.Now()
-	data := make([]byte, 1)
-	// read first data
-	_, err = conn.Read(data)
-	wait := time.Since(step).Seconds() * 1000
-	p.Result.Wait = &wait
 	
+	// read first byte data
+	firstData := make([]byte, 1)
+	_, err = conn.Read(firstData)
 	if err != nil {
 		if err != io.EOF {
 			msg := "Read error"
@@ -147,11 +145,29 @@ func (p *RaintankProbeHTTP) Run() error {
 			return nil
 		}
 	}
+	wait := time.Since(step).Seconds() * 1000
+	p.Result.Wait = &wait
 
 	var buf bytes.Buffer
-	
-	buf.Write(data)
-	io.CopyBuffer(&buf, conn, data)
+	buf.Write(firstData)
+	data := make([]byte, 1024)
+	limit := 100 * 1024
+	for {
+		n, err := conn.Read(data)
+		if err != nil {
+			if err != io.EOF {
+				msg := "Read error"
+				p.Result.Error = &msg
+				return nil
+			}else{
+				break
+			}
+		}
+		buf.Write(data[:n])
+		if buf.Len() > limit {
+			break
+		}
+	}
 	defer conn.Close()
 	
 	recv := time.Since(step).Seconds() * 1000
@@ -166,15 +182,6 @@ func (p *RaintankProbeHTTP) Run() error {
 	
 	readbuffer := bytes.NewBuffer(buf.Bytes())
 	response, err := http.ReadResponse(bufio.NewReader(readbuffer), request)
-	
-	// Error response
-	statusCode := float64(response.StatusCode)
-	if statusCode >= 400 {
-		msg := "Invalid status code " + strconv.Itoa(response.StatusCode);
-		p.Result.Error = &msg
-		return nil
-	}
-    p.Result.StatusCode = &statusCode
 	
 	if err != nil {
 		msg := err.Error()
@@ -218,6 +225,15 @@ func (p *RaintankProbeHTTP) Run() error {
 	
 	if err != nil {
 		msg := err.Error()
+		p.Result.Error = &msg
+		return nil
+	}
+	
+	// Error response
+	statusCode := float64(response.StatusCode)
+	p.Result.StatusCode = &statusCode
+	if statusCode >= 400 {
+		msg := "Invalid status code " + strconv.Itoa(response.StatusCode);
 		p.Result.Error = &msg
 		return nil
 	}
