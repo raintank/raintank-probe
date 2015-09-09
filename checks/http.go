@@ -77,8 +77,21 @@ func (p *RaintankProbeHTTP) Run() error {
 	url := fmt.Sprintf("http://%s:%s%s", p.Host, p.Port, p.Path)
 	request, err := http.NewRequest(p.Method, url, nil)
 	request.Header.Set("Connection", "close")
-	request.Header.Set("Accept-Encoding", "gzip")
-	request.Header.Set("User-Agent", "raintank-probe")
+	
+	// Parsing header (use fake request)
+	if p.Headers != "" {
+		headReader := bufio.NewReader(strings.NewReader("GET / HTTP/1.1\r\n" + p.Headers + "\r\n\r\n"))
+		dummyRequest, err := http.ReadRequest(headReader)
+		if err != nil {
+			msg := err.Error()//"failed to parse header."
+			p.Result.Error = &msg
+			return nil
+		}
+		
+		for key := range dummyRequest.Header {
+			request.Header.Set(key, dummyRequest.Header.Get(key))
+		}
+	}
 	
 	if err != nil {
 		msg := "connection closed"
@@ -120,27 +133,27 @@ func (p *RaintankProbeHTTP) Run() error {
 	defer conn.Close()
 	
 	// Wait & Receive
-	buf := &bytes.Buffer{}
-	data := make([]byte, 1)
-	first := true
 	step = time.Now()
-	for {
-		n, err := conn.Read(data)
-		if err != nil {
-			if err != io.EOF {
-				msg := "Read error"
-				p.Result.Error = &msg
-				return nil
-			}
-			break
+	data := make([]byte, 1)
+	// read first data
+	_, err = conn.Read(data)
+	wait := time.Since(step).Seconds() * 1000
+	p.Result.Wait = &wait
+	
+	if err != nil {
+		if err != io.EOF {
+			msg := "Read error"
+			p.Result.Error = &msg
+			return nil
 		}
-		if first == true {
-			wait := time.Since(step).Seconds() * 1000
-			p.Result.Wait = &wait
-			first = false
-		}
-		buf.Write(data[:n])
 	}
+
+	var buf bytes.Buffer
+	
+	buf.Write(data)
+	io.CopyBuffer(&buf, conn, data)
+	defer conn.Close()
+	
 	recv := time.Since(step).Seconds() * 1000
 	/* 
 		Total time 
@@ -218,10 +231,10 @@ func (p *RaintankProbeHTTP) Run() error {
 			return nil
 		}
 		
-		if rgx.MatchString(string(body)) {
-			// return ?
-		}else{
-			// return ?
+		if !rgx.MatchString(string(body)) {
+			msg := "expectRegex did not match"
+			p.Result.Error = &msg
+			return nil
 		}
     }
 	
