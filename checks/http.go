@@ -76,14 +76,13 @@ func (p *RaintankProbeHTTP) Run() error {
 	// reader
 	url := fmt.Sprintf("http://%s:%s%s", p.Host, p.Port, p.Path)
 	request, err := http.NewRequest(p.Method, url, nil)
-	request.Header.Set("Connection", "close")
 	
 	// Parsing header (use fake request)
 	if p.Headers != "" {
 		headReader := bufio.NewReader(strings.NewReader("GET / HTTP/1.1\r\n" + p.Headers + "\r\n\r\n"))
 		dummyRequest, err := http.ReadRequest(headReader)
 		if err != nil {
-			msg := err.Error()//"failed to parse header."
+			msg := err.Error()
 			p.Result.Error = &msg
 			return nil
 		}
@@ -91,6 +90,10 @@ func (p *RaintankProbeHTTP) Run() error {
 		for key := range dummyRequest.Header {
 			request.Header.Set(key, dummyRequest.Header.Get(key))
 		}
+	}
+	
+	if _, found := request.Header["Accept-Encoding"]; !found {
+		request.Header.Set("Accept-Encoding", "gzip")
 	}
 	
 	if err != nil {
