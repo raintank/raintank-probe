@@ -118,6 +118,7 @@ func (p *RaintankProbeHTTP) Run() error {
 		p.Result.Error = &msg
 		return nil
 	}
+	defer conn.Close()
 	connecting := time.Since(start).Seconds() * 1000
 	p.Result.Connect = &connecting
 
@@ -130,7 +131,6 @@ func (p *RaintankProbeHTTP) Run() error {
 	}
 	send := time.Since(step).Seconds() * 1000
 	p.Result.Send = &send
-	defer conn.Close()
 	
 	// Wait & Receive
 	step = time.Now()
@@ -165,10 +165,10 @@ func (p *RaintankProbeHTTP) Run() error {
 		}
 		buf.Write(data[:n])
 		if buf.Len() > limit {
+			conn.Close()
 			break
 		}
 	}
-	defer conn.Close()
 	
 	recv := time.Since(step).Seconds() * 1000
 	/* 
@@ -178,7 +178,6 @@ func (p *RaintankProbeHTTP) Run() error {
 	p.Result.Total = &total
 	
 	p.Result.Recv = &recv
-	defer conn.Close()
 	
 	readbuffer := bytes.NewBuffer(buf.Bytes())
 	response, err := http.ReadResponse(bufio.NewReader(readbuffer), request)
@@ -222,12 +221,6 @@ func (p *RaintankProbeHTTP) Run() error {
 		dataLength = float64(len(body))
 	}
     p.Result.DataLength = &dataLength
-	
-	if err != nil {
-		msg := err.Error()
-		p.Result.Error = &msg
-		return nil
-	}
 	
 	// Error response
 	statusCode := float64(response.StatusCode)
