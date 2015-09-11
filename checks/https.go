@@ -20,15 +20,16 @@ import (
 
 // HTTPSResult struct
 type HTTPSResult struct {
-	DNS        *float64 `json:"dns"`
-	Connect    *float64 `json:"connect"`
-	Send       *float64 `json:"send"`
-	Wait       *float64 `json:"wait"`
-	Recv       *float64 `json:"recv"`
-	Total      *float64 `json:"total"`
-	DataLength *float64 `json:"dataLength"`
-	StatusCode *float64 `json:"statusCode"`
-	Error      *string  `json:"error"`
+	DNS        	*float64 `json:"dns"`
+	Connect    	*float64 `json:"connect"`
+	Send       	*float64 `json:"send"`
+	Wait       	*float64 `json:"wait"`
+	Recv       	*float64 `json:"recv"`
+	Total		*float64 `json:"total"`
+	DataLength	*float64 `json:"dataLength"`
+	StatusCode	*float64 `json:"statusCode"`
+	Expiry		*string  `json:"expiry"`
+	Error      	*string  `json:"error"`
 }
 
 // RaintankProbeHTTPS struct.
@@ -240,6 +241,14 @@ func (p *RaintankProbeHTTPS) Run() error {
 		msg := "Invalid status code " + strconv.Itoa(response.StatusCode);
 		p.Result.Error = &msg
 		return nil
+	}
+	
+	if response.TLS == nil {
+		msg := "response has no TLS field"
+		p.Result.Expiry = &msg
+    } else {
+		msg := fmt.Sprintf("Subject: %s - Expires: %s\n", response.TLS.PeerCertificates[0].Subject.CommonName, response.TLS.PeerCertificates[0].NotAfter)
+		p.Result.Expiry = &msg
 	}
 	
 	// Regex
