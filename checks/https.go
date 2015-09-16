@@ -183,12 +183,8 @@ func (p *RaintankProbeHTTPS) Run() error {
 	}
 	
 	recv := time.Since(step).Seconds() * 1000
-	/* 
-		Total time 
-	*/
 	total := time.Since(start).Seconds() * 1000
 	p.Result.Total = &total
-	
 	p.Result.Recv = &recv
 	
 	readbuffer := bytes.NewBuffer(buf.Bytes())
@@ -243,12 +239,15 @@ func (p *RaintankProbeHTTPS) Run() error {
 		return nil
 	}
 	
-	if response.TLS == nil {
+	// Read certificate
+	certs := conn.ConnectionState().PeerCertificates
+
+	if certs == nil || len(certs) < 1 {
 		msg := "response has no TLS field"
-		p.Result.Expiry = &msg
-    } else {
-		msg := fmt.Sprintf("Subject: %s - Expires: %s\n", response.TLS.PeerCertificates[0].Subject.CommonName, response.TLS.PeerCertificates[0].NotAfter)
-		p.Result.Expiry = &msg
+		p.Result.Error = &msg
+	}else{
+		msg := fmt.Sprintf("Subject: %s - Expires: %s\n", certs[0].Subject.CommonName, certs[0].NotAfter)
+	 	p.Result.Expiry = &msg
 	}
 	
 	// Regex
@@ -268,4 +267,23 @@ func (p *RaintankProbeHTTPS) Run() error {
     }
 	
 	return nil
+}
+
+func ExpiresIn(t time.Time) string {
+	units := [...]struct {
+		suffix string
+		unit   time.Duration
+	}{
+		{"days", 24 * time.Hour},
+		{"hours", time.Hour},
+		{"minutes", time.Minute},
+		{"seconds", time.Second},
+	}
+	d := t.Sub(time.Now())
+	for _, u := range units {
+		if d > u.unit {
+			return fmt.Sprintf("Expires in %d %s", d/u.unit, u.suffix)
+		}
+	}
+	return fmt.Sprintf("Expired on %s", t.Local())
 }
