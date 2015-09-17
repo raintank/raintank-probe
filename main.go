@@ -9,7 +9,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/AriaEdo/raintank-probe/checks"
+	"github.com/raintank/raintank-probe/checks"
 )
 
 type RaintankProbeCheck interface {
