@@ -1,47 +1,47 @@
 package checks
 
 import (
-	"encoding/json"
-	"log"
-	"strconv"
-	"time"
-	"net"
-	"net/http"
-	"io"
-	"io/ioutil"
-	"fmt"
-	"strings"
 	"bufio"
 	"bytes"
-	"regexp"
 	"compress/gzip"
 	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"net"
+	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // HTTPSResult struct
 type HTTPSResult struct {
-	DNS        	*float64 `json:"dns"`
-	Connect    	*float64 `json:"connect"`
-	Send       	*float64 `json:"send"`
-	Wait       	*float64 `json:"wait"`
-	Recv       	*float64 `json:"recv"`
-	Total		*float64 `json:"total"`
-	DataLength	*float64 `json:"dataLength"`
-	StatusCode	*float64 `json:"statusCode"`
-	Expiry		*string  `json:"expiry"`
-	Error      	*string  `json:"error"`
+	DNS        *float64 `json:"dns"`
+	Connect    *float64 `json:"connect"`
+	Send       *float64 `json:"send"`
+	Wait       *float64 `json:"wait"`
+	Recv       *float64 `json:"recv"`
+	Total      *float64 `json:"total"`
+	DataLength *float64 `json:"dataLength"`
+	StatusCode *float64 `json:"statusCode"`
+	Expiry     *string  `json:"expiry"`
+	Error      *string  `json:"error"`
 }
 
 // RaintankProbeHTTPS struct.
 type RaintankProbeHTTPS struct {
-	Host        	string      `json:"host"`
-	Path        	string      `json:"path"`
-	Port        	string      `json:"port"`
-	ValidateCert	string		`json:"validateCert"`
-	Method      	string      `json:"method"`
-	Headers     	string      `json:"headers"`
-	ExpectRegex 	string      `json:"expectRegex"`
-	Result      	*HTTPSResult `json:"-"`
+	Host         string       `json:"host"`
+	Path         string       `json:"path"`
+	Port         string       `json:"port"`
+	ValidateCert string       `json:"validateCert"`
+	Method       string       `json:"method"`
+	Headers      string       `json:"headers"`
+	ExpectRegex  string       `json:"expectRegex"`
+	Result       *HTTPSResult `json:"-"`
 }
 
 // NewRaintankHTTPSProbe json check
@@ -67,19 +67,18 @@ func (p *RaintankProbeHTTPS) Results() interface{} {
 	return p.Result
 }
 
-
 // Run checking
 func (p *RaintankProbeHTTPS) Run() error {
 	p.Result = &HTTPSResult{}
-	
+
 	if p.Method == "" {
 		p.Method = "GET"
 	}
-	
+
 	// reader
 	url := fmt.Sprintf("http://%s:%s%s", p.Host, p.Port, p.Path)
 	request, err := http.NewRequest(p.Method, url, nil)
-	
+
 	// Parsing header (use fake request)
 	if p.Headers != "" {
 		headReader := bufio.NewReader(strings.NewReader("GET / HTTP/1.1\r\n" + p.Headers + "\r\n\r\n"))
@@ -89,22 +88,22 @@ func (p *RaintankProbeHTTPS) Run() error {
 			p.Result.Error = &msg
 			return nil
 		}
-		
+
 		for key := range dummyRequest.Header {
 			request.Header.Set(key, dummyRequest.Header.Get(key))
 		}
 	}
-	
+
 	if _, found := request.Header["Accept-Encoding"]; !found {
 		request.Header.Set("Accept-Encoding", "gzip")
 	}
-	
+
 	if err != nil {
 		msg := "connection closed"
 		p.Result.Error = &msg
 		return nil
 	}
-	
+
 	// DNS lookup
 	step := time.Now()
 	addrs, err := net.LookupHost(p.Host)
@@ -115,13 +114,13 @@ func (p *RaintankProbeHTTPS) Run() error {
 	}
 	dnsResolve := time.Since(step).Seconds() * 1000
 	p.Result.DNS = &dnsResolve
-	
+
 	validate, _ := strconv.ParseBool(p.ValidateCert)
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: !validate,
-		ServerName: p.Host,
+		ServerName:         p.Host,
 	}
-	
+
 	// Dialing
 	start := time.Now()
 	conn, err := tls.Dial("tcp", addrs[0]+":"+p.Port, tlsConfig)
@@ -143,10 +142,10 @@ func (p *RaintankProbeHTTPS) Run() error {
 	}
 	send := time.Since(step).Seconds() * 1000
 	p.Result.Send = &send
-	
+
 	// Wait & Receive
 	step = time.Now()
-	
+
 	// read first byte data
 	firstData := make([]byte, 1)
 	_, err = conn.Read(firstData)
@@ -171,7 +170,7 @@ func (p *RaintankProbeHTTPS) Run() error {
 				msg := "Read error"
 				p.Result.Error = &msg
 				return nil
-			}else{
+			} else {
 				break
 			}
 		}
@@ -181,40 +180,40 @@ func (p *RaintankProbeHTTPS) Run() error {
 			break
 		}
 	}
-	
+
 	recv := time.Since(step).Seconds() * 1000
 	total := time.Since(start).Seconds() * 1000
 	p.Result.Total = &total
 	p.Result.Recv = &recv
-	
+
 	readbuffer := bytes.NewBuffer(buf.Bytes())
 	response, err := http.ReadResponse(bufio.NewReader(readbuffer), request)
-	
+
 	if err != nil {
 		msg := err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
-	
+
 	var reader io.ReadCloser
 	if p.ExpectRegex != "" {
 		// Handle gzip
 		switch response.Header.Get("Content-Encoding") {
-			case "gzip":
-				reader, err = gzip.NewReader(response.Body)
-				defer reader.Close()
-				if err != nil {
-					msg := err.Error()
-					p.Result.Error = &msg
-					return nil
-				}
-			default:
-				reader = response.Body
+		case "gzip":
+			reader, err = gzip.NewReader(response.Body)
+			defer reader.Close()
+			if err != nil {
+				msg := err.Error()
+				p.Result.Error = &msg
+				return nil
+			}
+		default:
+			reader = response.Body
 		}
-	}else{
+	} else {
 		reader = response.Body
 	}
-	
+
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(reader)
 	if err != nil {
@@ -222,34 +221,34 @@ func (p *RaintankProbeHTTPS) Run() error {
 		p.Result.Error = &msg
 		return nil
 	}
-	
+
 	// Data Length
 	dataLength := float64(0)
 	if dataLength, err = strconv.ParseFloat(response.Header.Get("Content-Length"), 64); dataLength < 1 || err != nil {
 		dataLength = float64(len(body))
 	}
-    p.Result.DataLength = &dataLength
-	
+	p.Result.DataLength = &dataLength
+
 	// Error response
 	statusCode := float64(response.StatusCode)
 	p.Result.StatusCode = &statusCode
 	if statusCode >= 400 {
-		msg := "Invalid status code " + strconv.Itoa(response.StatusCode);
+		msg := "Invalid status code " + strconv.Itoa(response.StatusCode)
 		p.Result.Error = &msg
 		return nil
 	}
-	
+
 	// Read certificate
 	certs := conn.ConnectionState().PeerCertificates
 
 	if certs == nil || len(certs) < 1 {
 		msg := "response has no TLS field"
 		p.Result.Error = &msg
-	}else{
+	} else {
 		msg := fmt.Sprintf("Subject: %s - Expires: %s\n", certs[0].Subject.CommonName, certs[0].NotAfter)
-	 	p.Result.Expiry = &msg
+		p.Result.Expiry = &msg
 	}
-	
+
 	// Regex
 	if p.ExpectRegex != "" {
 		rgx, err := regexp.Compile(p.ExpectRegex)
@@ -258,14 +257,14 @@ func (p *RaintankProbeHTTPS) Run() error {
 			p.Result.Error = &msg
 			return nil
 		}
-		
+
 		if !rgx.MatchString(string(body)) {
 			msg := "expectRegex did not match"
 			p.Result.Error = &msg
 			return nil
 		}
-    }
-	
+	}
+
 	return nil
 }
 
