@@ -26,6 +26,7 @@ type HTTPResult struct {
 	Recv       *float64 `json:"recv"`
 	Total      *float64 `json:"total"`
 	DataLength *float64 `json:"dataLength"`
+	Throughput *float64 `json:"throughput"`
 	StatusCode *float64 `json:"statusCode"`
 	Error      *string  `json:"error"`
 }
@@ -95,11 +96,8 @@ func (p *RaintankProbeHTTP) Run() error {
 		request.Header.Set("Accept-Encoding", "gzip")
 	}
 
-	if err != nil {
-		msg := "connection closed"
-		p.Result.Error = &msg
-		return nil
-	}
+	//always close the conneciton
+	request.Header.Set("Connection", "close")
 
 	// DNS lookup
 	step := time.Now()
@@ -134,7 +132,7 @@ func (p *RaintankProbeHTTP) Run() error {
 	send := time.Since(step).Seconds() * 1000
 	p.Result.Send = &send
 
-	// Wait & Receive
+	// Wait
 	step = time.Now()
 
 	// read first byte data
@@ -150,12 +148,16 @@ func (p *RaintankProbeHTTP) Run() error {
 	wait := time.Since(step).Seconds() * 1000
 	p.Result.Wait = &wait
 
+	// Receive
+	step = time.Now()
 	var buf bytes.Buffer
 	buf.Write(firstData)
-	data := make([]byte, 1024)
+
 	limit := 100 * 1024
 	for {
+		data := make([]byte, 1024)
 		n, err := conn.Read(data)
+		buf.Write(data[:n])
 		if err != nil {
 			if err != io.EOF {
 				msg := "Read error"
@@ -165,7 +167,7 @@ func (p *RaintankProbeHTTP) Run() error {
 				break
 			}
 		}
-		buf.Write(data[:n])
+
 		if buf.Len() > limit {
 			conn.Close()
 			break
@@ -181,8 +183,17 @@ func (p *RaintankProbeHTTP) Run() error {
 
 	p.Result.Recv = &recv
 
-	readbuffer := bytes.NewBuffer(buf.Bytes())
-	response, err := http.ReadResponse(bufio.NewReader(readbuffer), request)
+	// Data Length
+	dataLength := float64(buf.Len())
+	p.Result.DataLength = &dataLength
+
+	//throughput
+	if recv > 0 && dataLength > 0 {
+		throughput := dataLength / (recv / 1000.0)
+		p.Result.Throughput = &throughput
+	}
+
+	response, err := http.ReadResponse(bufio.NewReader(&buf), request)
 
 	if err != nil {
 		msg := err.Error()
@@ -196,7 +207,6 @@ func (p *RaintankProbeHTTP) Run() error {
 		switch response.Header.Get("Content-Encoding") {
 		case "gzip":
 			reader, err = gzip.NewReader(response.Body)
-			defer reader.Close()
 			if err != nil {
 				msg := err.Error()
 				p.Result.Error = &msg
@@ -209,20 +219,13 @@ func (p *RaintankProbeHTTP) Run() error {
 		reader = response.Body
 	}
 
-	defer response.Body.Close()
 	body, err := ioutil.ReadAll(reader)
-	if err != nil {
+	reader.Close()
+	if err != nil && len(body) == 0 {
 		msg := err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
-
-	// Data Length
-	dataLength := float64(0)
-	if dataLength, err = strconv.ParseFloat(response.Header.Get("Content-Length"), 64); dataLength < 1 || err != nil {
-		dataLength = float64(len(body))
-	}
-	p.Result.DataLength = &dataLength
 
 	// Error response
 	statusCode := float64(response.StatusCode)

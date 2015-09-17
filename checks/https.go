@@ -27,8 +27,9 @@ type HTTPSResult struct {
 	Recv       *float64 `json:"recv"`
 	Total      *float64 `json:"total"`
 	DataLength *float64 `json:"dataLength"`
+	Throughput *float64 `json:"throughput"`
 	StatusCode *float64 `json:"statusCode"`
-	Expiry     *string  `json:"expiry"`
+	Expiry     *float64 `json:"expiry"`
 	Error      *string  `json:"error"`
 }
 
@@ -76,7 +77,7 @@ func (p *RaintankProbeHTTPS) Run() error {
 	}
 
 	// reader
-	url := fmt.Sprintf("http://%s:%s%s", p.Host, p.Port, p.Path)
+	url := fmt.Sprintf("https://%s:%s%s", p.Host, p.Port, p.Path)
 	request, err := http.NewRequest(p.Method, url, nil)
 
 	// Parsing header (use fake request)
@@ -98,11 +99,8 @@ func (p *RaintankProbeHTTPS) Run() error {
 		request.Header.Set("Accept-Encoding", "gzip")
 	}
 
-	if err != nil {
-		msg := "connection closed"
-		p.Result.Error = &msg
-		return nil
-	}
+	//always close the conneciton
+	request.Header.Set("Connection", "close")
 
 	// DNS lookup
 	step := time.Now()
@@ -112,6 +110,7 @@ func (p *RaintankProbeHTTPS) Run() error {
 		p.Result.Error = &msg
 		return nil
 	}
+
 	dnsResolve := time.Since(step).Seconds() * 1000
 	p.Result.DNS = &dnsResolve
 
@@ -129,6 +128,9 @@ func (p *RaintankProbeHTTPS) Run() error {
 		p.Result.Error = &msg
 		return nil
 	}
+	// Read certificate
+	certs := conn.ConnectionState().PeerCertificates
+
 	defer conn.Close()
 	connecting := time.Since(start).Seconds() * 1000
 	p.Result.Connect = &connecting
@@ -143,10 +145,10 @@ func (p *RaintankProbeHTTPS) Run() error {
 	send := time.Since(step).Seconds() * 1000
 	p.Result.Send = &send
 
-	// Wait & Receive
+	// Wait
 	step = time.Now()
 
-	// read first byte data
+	//read first byte data
 	firstData := make([]byte, 1)
 	_, err = conn.Read(firstData)
 	if err != nil {
@@ -159,12 +161,17 @@ func (p *RaintankProbeHTTPS) Run() error {
 	wait := time.Since(step).Seconds() * 1000
 	p.Result.Wait = &wait
 
+	//Start recieve
+	step = time.Now()
+
 	var buf bytes.Buffer
 	buf.Write(firstData)
-	data := make([]byte, 1024)
+
 	limit := 100 * 1024
 	for {
+		data := make([]byte, 1024)
 		n, err := conn.Read(data)
+		buf.Write(data[:n])
 		if err != nil {
 			if err != io.EOF {
 				msg := "Read error"
@@ -174,8 +181,8 @@ func (p *RaintankProbeHTTPS) Run() error {
 				break
 			}
 		}
-		buf.Write(data[:n])
-		if buf.Len() > limit {
+
+		if buf.Len() >= limit {
 			conn.Close()
 			break
 		}
@@ -186,8 +193,17 @@ func (p *RaintankProbeHTTPS) Run() error {
 	p.Result.Total = &total
 	p.Result.Recv = &recv
 
-	readbuffer := bytes.NewBuffer(buf.Bytes())
-	response, err := http.ReadResponse(bufio.NewReader(readbuffer), request)
+	// Data Length
+	dataLength := float64(buf.Len())
+	p.Result.DataLength = &dataLength
+
+	//throughput
+	if recv > 0 && dataLength > 0 {
+		throughput := dataLength / (recv / 1000.0)
+		p.Result.Throughput = &throughput
+	}
+
+	response, err := http.ReadResponse(bufio.NewReader(&buf), request)
 
 	if err != nil {
 		msg := err.Error()
@@ -201,8 +217,8 @@ func (p *RaintankProbeHTTPS) Run() error {
 		switch response.Header.Get("Content-Encoding") {
 		case "gzip":
 			reader, err = gzip.NewReader(response.Body)
-			defer reader.Close()
 			if err != nil {
+				log.Printf("failed to decode content body for request to %s. %s", url, err)
 				msg := err.Error()
 				p.Result.Error = &msg
 				return nil
@@ -214,20 +230,13 @@ func (p *RaintankProbeHTTPS) Run() error {
 		reader = response.Body
 	}
 
-	defer response.Body.Close()
 	body, err := ioutil.ReadAll(reader)
-	if err != nil {
+	reader.Close()
+	if err != nil && len(body) == 0 {
 		msg := err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
-
-	// Data Length
-	dataLength := float64(0)
-	if dataLength, err = strconv.ParseFloat(response.Header.Get("Content-Length"), 64); dataLength < 1 || err != nil {
-		dataLength = float64(len(body))
-	}
-	p.Result.DataLength = &dataLength
 
 	// Error response
 	statusCode := float64(response.StatusCode)
@@ -238,15 +247,12 @@ func (p *RaintankProbeHTTPS) Run() error {
 		return nil
 	}
 
-	// Read certificate
-	certs := conn.ConnectionState().PeerCertificates
-
 	if certs == nil || len(certs) < 1 {
-		msg := "response has no TLS field"
-		p.Result.Error = &msg
+		log.Printf("no PeerCerticates for connection to %s", p.Host)
 	} else {
-		msg := fmt.Sprintf("Subject: %s - Expires: %s\n", certs[0].Subject.CommonName, certs[0].NotAfter)
-		p.Result.Expiry = &msg
+		timeTilExpiry := certs[0].NotAfter.Sub(time.Now())
+		secondsTilExpiry := float64(timeTilExpiry) / float64(time.Second)
+		p.Result.Expiry = &secondsTilExpiry
 	}
 
 	// Regex
@@ -266,23 +272,4 @@ func (p *RaintankProbeHTTPS) Run() error {
 	}
 
 	return nil
-}
-
-func ExpiresIn(t time.Time) string {
-	units := [...]struct {
-		suffix string
-		unit   time.Duration
-	}{
-		{"days", 24 * time.Hour},
-		{"hours", time.Hour},
-		{"minutes", time.Minute},
-		{"seconds", time.Second},
-	}
-	d := t.Sub(time.Now())
-	for _, u := range units {
-		if d > u.unit {
-			return fmt.Sprintf("Expires in %d %s", d/u.unit, u.suffix)
-		}
-	}
-	return fmt.Sprintf("Expired on %s", t.Local())
 }
