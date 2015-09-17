@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
 	"github.com/raintank/raintank-probe/checks"
 )
 
