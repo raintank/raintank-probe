@@ -57,16 +57,12 @@ func NewRaintankDnsProbe(body []byte) (*RaintankProbeDns, error) {
 	if p.Port == "" {
 		p.Port = "53"
 	}
-	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
-		return nil, fmt.Errorf("failed to parse settings. Invalid port")
-	}
+
 	if p.Protocol == "" {
 		p.Protocol = "udp"
 	}
 	p.Protocol = strings.ToLower(p.Protocol)
-	if !(p.Protocol == "udp" || p.Protocol == "tcp") {
-		return nil, fmt.Errorf("failed to parse settings. Invalid protocol")
-	}
+
 	return &p, nil
 }
 
@@ -78,6 +74,19 @@ func (p *RaintankProbeDns) Results() interface{} {
 // run the check. this is executed in a goroutine.
 func (p *RaintankProbeDns) Run() error {
 	p.Result = &DnsResult{}
+
+	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
+		msg := "Invalid port"
+		p.Result.Error = &msg
+		return nil
+	}
+
+	if !(p.Protocol == "udp" || p.Protocol == "tcp") {
+		msg := "Invalid protocol"
+		p.Result.Error = &msg
+		return nil
+	}
+
 	if !p.RecordType.IsValid() {
 		msg := "Invlid record type. " + string(p.RecordType)
 		p.Result.Error = &msg

@@ -53,13 +53,7 @@ func NewRaintankHTTPSProbe(body []byte) (*RaintankProbeHTTPS, error) {
 		log.Fatalf("failed to parse settings. %v", err.Error())
 		return nil, err
 	}
-	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
-		log.Fatal("failed to parse settings. Invalid port")
-		return nil, err
-	}
-	if !strings.HasPrefix(p.Path, "/") {
-		return nil, fmt.Errorf("invalid path. must start with /")
-	}
+
 	return &p, nil
 }
 
@@ -71,6 +65,17 @@ func (p *RaintankProbeHTTPS) Results() interface{} {
 // Run checking
 func (p *RaintankProbeHTTPS) Run() error {
 	p.Result = &HTTPSResult{}
+
+	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
+		msg := "Invalid port"
+		p.Result.Error = &msg
+		return nil
+	}
+	if !strings.HasPrefix(p.Path, "/") {
+		msg := "Invalid path. must start with /"
+		p.Result.Error = &msg
+		return nil
+	}
 
 	if p.Method == "" {
 		p.Method = "GET"
