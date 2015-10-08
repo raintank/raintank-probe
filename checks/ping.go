@@ -8,11 +8,133 @@ import (
 	"net"
 	"os"
 	"sort"
+	"sync"
 	"time"
 )
 
 // Number of pings to send to the host.
 const count = 5
+
+// Pinger object performs a Ping and returns
+// the results to all registered listeners.
+type Pinger struct {
+	Address    string
+	Results    []float64
+	Started    bool
+	m          sync.Mutex
+	resultChan []chan []float64
+}
+
+// Register a Listner to recieve results from a Ping job
+func (p *Pinger) AddListener() <-chan []float64 {
+	p.m.Lock()
+	c := make(chan []float64)
+	p.resultChan = append(p.resultChan, c)
+
+	// if we haven't already started the ping, do so.
+	if !p.Started {
+		go p.Ping()
+		p.Started = true
+	}
+	p.m.Unlock()
+	return c
+}
+
+func (p *Pinger) Ping() {
+	p.ping()
+	// we lock here to prevent any new listeners being added.
+	p.m.Lock()
+	for _, c := range p.resultChan {
+		c <- p.Results
+		close(c)
+	}
+	p.resultChan = nil
+	p.Started = false
+	p.m.Unlock()
+	// Any blocked AddListener calls, will now proceed and
+	// run a fetch new ping results.
+}
+
+func (p *Pinger) ping() {
+	fastpinger := fastping.NewPinger()
+	p.Results = make([]float64, 0)
+
+	if err := fastpinger.AddIP(p.Address); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+
+	//perform the Pings
+	fastpinger.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
+		//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
+		p.Results = append(p.results, rtt.Seconds()*1000)
+	}
+	for i := 0; i < count; i++ {
+		err := fastpinger.Run()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	}
+	return
+}
+
+type Job struct {
+	Pinger *Pinger
+	Count  int
+}
+
+type Coordinator struct {
+	Jobs map[string]*Job
+	m    sync.Mutex
+}
+
+func NewCoordinator() *Coordinator {
+	return &Coordinator{
+		Jobs: make(map[string]*Job),
+	}
+}
+
+func (c *Coordinator) Ping(addr string) []float64 {
+	c.m.Lock()
+	job, ok := c.Jobs[addr]
+	if !ok {
+		//need to start new job.
+		job = &Job{
+			Pinger: &Pinger{Address: addr},
+			Count:  1,
+		}
+		c.Jobs[addr] = job
+	} else {
+		job.Count++
+	}
+
+	// add listener to job to get results.
+	resultChan := job.Pinger.AddListener()
+	c.m.Unlock()
+
+	results := <-resultChan
+
+	// we lock here to prevent anyone using this job while
+	// we check if we are the last user of it.
+	c.m.Lock()
+	job.Count--
+	if job.Count == 0 {
+		delete(c.Jobs, addr)
+	}
+	c.m.Unlock()
+	// Any calls that were blocked can now proceed. If
+	// we deleted the job, they will create a new one.
+
+	return results
+
+}
+
+// global co-oridinator shared between all go-routines.
+var coordinator *Coordinator
+
+func init() {
+	coordinator = NewCoordinator()
+}
 
 // results. we use pointers so that missing data will be
 // encoded as 'null' in the json response.
@@ -62,26 +184,7 @@ func (p *RaintankProbePing) Run() error {
 	}
 	ipAddr = addrs[0]
 
-	pinger := fastping.NewPinger()
-	results := make([]float64, 0)
-
-	if err := pinger.AddIP(ipAddr); err != nil {
-		msg := "failed to resolve hostname to IP."
-		p.Result.Error = &msg
-		return nil
-	}
-
-	//perform the Pings
-	pinger.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
-		//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
-		results = append(results, rtt.Seconds()*1000)
-	}
-	for i := 0; i < count; i++ {
-		err := pinger.Run()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
-	}
+	results := coordinator.Ping(ipAddr)
 
 	// derive stats from results.
 	successCount := len(results)
@@ -124,5 +227,6 @@ func (p *RaintankProbePing) Run() error {
 		error := "100% packet loss"
 		p.Result.Error = &error
 	}
+
 	return nil
 }
