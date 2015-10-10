@@ -67,7 +67,7 @@ func (p *Pinger) ping() {
 	//perform the Pings
 	fastpinger.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
 		//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
-		p.Results = append(p.results, rtt.Seconds()*1000)
+		p.Results = append(p.Results, rtt.Seconds()*1000)
 	}
 	for i := 0; i < count; i++ {
 		err := fastpinger.Run()
