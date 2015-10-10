@@ -77,7 +77,11 @@ func (p *RaintankProbeHTTP) Run() error {
 	}
 
 	// reader
-	url := fmt.Sprintf("http://%s:%s%s", p.Host, p.Port, p.Path)
+	tmpPort := ""
+	if p.Port != "80" {
+		tmpPort = ":" + p.Port
+	}
+	url := fmt.Sprintf("http://%s%s%s", p.Host, tmpPort, p.Path)
 	request, err := http.NewRequest(p.Method, url, nil)
 
 	// Parsing header (use fake request)
