@@ -61,6 +61,7 @@ func (p *RaintankProbeHTTP) Results() interface{} {
 
 // Run checking
 func (p *RaintankProbeHTTP) Run() error {
+	deadline := time.Now().Add(10 * time.Second)
 	p.Result = &HTTPResult{}
 	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
 		msg := "Invalid port"
@@ -119,12 +120,13 @@ func (p *RaintankProbeHTTP) Run() error {
 
 	// Dialing
 	start := time.Now()
-	conn, err := net.Dial("tcp", addrs[0]+":"+p.Port)
+	conn, err := net.DialTimeout("tcp", addrs[0]+":"+p.Port, 10*time.Second)
 	if err != nil {
 		msg := err.Error()
 		p.Result.Error = &msg
 		return nil
 	}
+	conn.SetDeadline(deadline)
 	defer conn.Close()
 	connecting := time.Since(start).Seconds() * 1000
 	p.Result.Connect = &connecting

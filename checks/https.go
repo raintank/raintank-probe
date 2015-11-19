@@ -64,6 +64,7 @@ func (p *RaintankProbeHTTPS) Results() interface{} {
 
 // Run checking
 func (p *RaintankProbeHTTPS) Run() error {
+	deadline := time.Now().Add(10 * time.Second)
 	p.Result = &HTTPSResult{}
 
 	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
@@ -131,7 +132,15 @@ func (p *RaintankProbeHTTPS) Run() error {
 
 	// Dialing
 	start := time.Now()
-	conn, err := tls.Dial("tcp", addrs[0]+":"+p.Port, tlsConfig)
+	tcpconn, err := net.DialTimeout("tcp", addrs[0]+":"+p.Port, 10*time.Second)
+	if err != nil {
+		msg := err.Error()
+		p.Result.Error = &msg
+		return nil
+	}
+	tcpconn.SetDeadline(deadline)
+	conn := tls.Client(tcpconn, tlsConfig)
+	err = conn.Handshake()
 	if err != nil {
 		msg := err.Error()
 		p.Result.Error = &msg
