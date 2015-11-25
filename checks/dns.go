@@ -44,6 +44,7 @@ type RaintankProbeDns struct {
 	Server     string        `json:"server"`
 	Port       string        `json:"port"`
 	Protocol   string        `json:"protocol"`
+	Timeout    int           `json:"timeout"`
 	Result     *DnsResult    `json:"-"`
 }
 
@@ -73,6 +74,7 @@ func (p *RaintankProbeDns) Results() interface{} {
 
 // run the check. this is executed in a goroutine.
 func (p *RaintankProbeDns) Run() error {
+	deadline := time.Now().Add(time.Second * time.Duration(p.Timeout))
 	p.Result = &DnsResult{}
 
 	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
@@ -100,6 +102,11 @@ func (p *RaintankProbeDns) Run() error {
 	m.SetQuestion(p.RecordName+".", recordTypeToWireType[p.RecordType])
 
 	for _, s := range servers {
+		if time.Now().After(deadline) {
+			msg := "timeout looking up dns record."
+			p.Result.Error = &msg
+			return nil
+		}
 		//trim any leading/training whitespace.
 		server := strings.Trim(s, " ")
 

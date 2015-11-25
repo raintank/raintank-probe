@@ -39,6 +39,7 @@ type RaintankProbeHTTP struct {
 	Method      string      `json:"method"`
 	Headers     string      `json:"headers"`
 	ExpectRegex string      `json:"expectRegex"`
+	Timeout     int         `json:"timeout"`
 	Result      *HTTPResult `json:"-"`
 }
 
@@ -61,7 +62,7 @@ func (p *RaintankProbeHTTP) Results() interface{} {
 
 // Run checking
 func (p *RaintankProbeHTTP) Run() error {
-	deadline := time.Now().Add(10 * time.Second)
+	deadline := time.Now().Add(time.Second * time.Duration(p.Timeout))
 	p.Result = &HTTPResult{}
 	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
 		msg := "Invalid port"

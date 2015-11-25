@@ -21,6 +21,7 @@ type Pinger struct {
 	Address    string
 	Results    []float64
 	Started    bool
+	Deadline   time.Time
 	m          sync.Mutex
 	resultChan []chan []float64
 }
@@ -57,6 +58,8 @@ func (p *Pinger) Ping() {
 
 func (p *Pinger) ping() {
 	fastpinger := fastping.NewPinger()
+	// we hard code the timeout for each ping to 2seconds.
+	fastpinger.MaxRTT = 2 * time.Second
 	p.Results = make([]float64, 0)
 
 	if err := fastpinger.AddIP(p.Address); err != nil {
@@ -69,10 +72,13 @@ func (p *Pinger) ping() {
 		//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
 		p.Results = append(p.Results, rtt.Seconds()*1000)
 	}
+
 	for i := 0; i < count; i++ {
-		err := fastpinger.Run()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+		if time.Now().Before(p.Deadline) {
+			err := fastpinger.Run()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
 		}
 	}
 	return
@@ -94,13 +100,13 @@ func NewCoordinator() *Coordinator {
 	}
 }
 
-func (c *Coordinator) Ping(addr string) []float64 {
+func (c *Coordinator) Ping(addr string, deadline time.Time) []float64 {
 	c.m.Lock()
 	job, ok := c.Jobs[addr]
 	if !ok {
 		//need to start new job.
 		job = &Job{
-			Pinger: &Pinger{Address: addr},
+			Pinger: &Pinger{Address: addr, Deadline: deadline},
 			Count:  1,
 		}
 		c.Jobs[addr] = job
@@ -151,6 +157,7 @@ type PingResult struct {
 // Our check definition.
 type RaintankProbePing struct {
 	Hostname string      `json:"hostname"`
+	Timeout  int         `json:"timeout"`
 	Result   *PingResult `json:"-"`
 }
 
@@ -171,6 +178,7 @@ func (p *RaintankProbePing) Results() interface{} {
 
 // run the check. this is executed in a goroutine.
 func (p *RaintankProbePing) Run() error {
+	deadline := time.Now().Add(time.Second * time.Duration(p.Timeout))
 	p.Result = &PingResult{}
 
 	var ipAddr string
@@ -182,9 +190,14 @@ func (p *RaintankProbePing) Run() error {
 		p.Result.Error = &msg
 		return nil
 	}
+	if time.Now().After(deadline) {
+		msg := "timeout resolving IP address of hostname."
+		p.Result.Error = &msg
+		return nil
+	}
 	ipAddr = addrs[0]
 
-	results := coordinator.Ping(ipAddr)
+	results := coordinator.Ping(ipAddr, deadline)
 
 	// derive stats from results.
 	successCount := len(results)
