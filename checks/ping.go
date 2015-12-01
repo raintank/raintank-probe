@@ -3,161 +3,22 @@ package checks
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/raintank/go-fastping"
 	"math"
 	"net"
-	"os"
 	"sort"
-	"sync"
 	"time"
+
+	"github.com/raintank/go-pinger"
 )
 
 // Number of pings to send to the host.
 const count = 5
 
-// Pinger object performs a Ping and returns
-// the results to all registered listeners.
-type Pinger struct {
-	Address    string
-	Results    []float64
-	Errors     []error
-	Started    bool
-	Deadline   time.Time
-	m          sync.Mutex
-	resultChan []chan *PingerResult
-}
-
-type PingerResult struct {
-	Success []float64
-	Error   []error
-}
-
-func (p *PingerResult) String() string {
-	return fmt.Sprintf("SuccessCount: %d, ErrorCount: %d, Success: %v, Error: %v", len(p.Success), len(p.Error), p.Success, p.Error)
-}
-
-// Register a Listner to recieve results from a Ping job
-func (p *Pinger) AddListener() <-chan *PingerResult {
-	p.m.Lock()
-	c := make(chan *PingerResult)
-	p.resultChan = append(p.resultChan, c)
-
-	// if we haven't already started the ping, do so.
-	if !p.Started {
-		go p.Ping()
-		p.Started = true
-	}
-	p.m.Unlock()
-	return c
-}
-
-func (p *Pinger) Ping() {
-	p.ping()
-	// we lock here to prevent any new listeners being added.
-	p.m.Lock()
-	for _, c := range p.resultChan {
-		c <- &PingerResult{Success: p.Results, Error: p.Errors}
-		close(c)
-	}
-	p.resultChan = nil
-	p.Started = false
-	p.m.Unlock()
-	// Any blocked AddListener calls, will now proceed and
-	// run a fetch new ping results.
-}
-
-func (p *Pinger) ping() {
-	fastpinger := fastping.NewPinger()
-	// we hard code the timeout for each ping to 2seconds.
-	fastpinger.MaxRTT = 2 * time.Second
-	p.Results = make([]float64, 0)
-
-	if err := fastpinger.AddIP(p.Address); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return
-	}
-
-	//perform the Pings
-	fastpinger.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
-		//fmt.Printf("IP Addr: %s receive, RTT: %v\n", addr.String(), rtt)
-		p.Results = append(p.Results, rtt.Seconds()*1000)
-	}
-
-	fastpinger.OnIdle = func() {
-		p.Errors = append(p.Errors, fmt.Errorf("Timeout waiting for response from %s.\n", p.Address))
-	}
-
-	for i := 0; i < count; i++ {
-		if time.Now().Before(p.Deadline) {
-			//fmt.Printf("sending ping %d for %s\n", i+1, p.Address)
-			err := fastpinger.Run()
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-			}
-		} else {
-			//fmt.Printf("Deadline reached, not sending any more pings to %s.\n", p.Address)
-			break
-		}
-	}
-	return
-}
-
-type Job struct {
-	Pinger *Pinger
-	Count  int
-}
-
-type Coordinator struct {
-	Jobs map[string]*Job
-	m    sync.Mutex
-}
-
-func NewCoordinator() *Coordinator {
-	return &Coordinator{
-		Jobs: make(map[string]*Job),
-	}
-}
-
-func (c *Coordinator) Ping(addr string, deadline time.Time) *PingerResult {
-	c.m.Lock()
-	job, ok := c.Jobs[addr]
-	if !ok {
-		//need to start new job.
-		job = &Job{
-			Pinger: &Pinger{Address: addr, Deadline: deadline},
-			Count:  1,
-		}
-		c.Jobs[addr] = job
-	} else {
-		job.Count++
-	}
-
-	// add listener to job to get results.
-	resultChan := job.Pinger.AddListener()
-	c.m.Unlock()
-
-	results := <-resultChan
-
-	// we lock here to prevent anyone using this job while
-	// we check if we are the last user of it.
-	c.m.Lock()
-	job.Count--
-	if job.Count == 0 {
-		delete(c.Jobs, addr)
-	}
-	c.m.Unlock()
-	// Any calls that were blocked can now proceed. If
-	// we deleted the job, they will create a new one.
-
-	return results
-
-}
-
 // global co-oridinator shared between all go-routines.
-var coordinator *Coordinator
+var GlobalPinger *pinger.Pinger
 
 func init() {
-	coordinator = NewCoordinator()
+	GlobalPinger = pinger.NewPinger()
 }
 
 // results. we use pointers so that missing data will be
@@ -215,17 +76,27 @@ func (p *RaintankProbePing) Run() error {
 	}
 	ipAddr = addrs[0]
 
-	results := coordinator.Ping(ipAddr, deadline)
-	//fmt.Printf("PING RESULT: %s\n", results.String())
+	resultsChan, err := GlobalPinger.Ping(ipAddr, count, deadline)
+	if err != nil {
+		return err
+	}
+
+	results := <-resultsChan
+
 	// derive stats from results.
-	successCount := len(results.Success)
-	failCount := len(results.Error)
+	successCount := results.Received
+	failCount := results.Sent - results.Received
+
+	measurements := make([]float64, len(results.Latency))
+	for i, m := range results.Latency {
+		measurements[i] = m.Seconds() * 1000
+	}
 
 	tsum := 0.0
 	tsum2 := 0.0
 	min := math.Inf(1)
 	max := 0.0
-	for _, r := range results.Success {
+	for _, r := range measurements {
 		if r > max {
 			max = r
 		}
@@ -241,8 +112,8 @@ func (p *RaintankProbePing) Run() error {
 		p.Result.Avg = &avg
 		root := math.Sqrt((tsum2 / float64(successCount)) - ((tsum / float64(successCount)) * (tsum / float64(successCount))))
 		p.Result.Mdev = &root
-		sort.Float64s(results.Success)
-		mean := results.Success[successCount/2]
+		sort.Float64s(measurements)
+		mean := measurements[successCount/2]
 		p.Result.Mean = &mean
 		p.Result.Min = &min
 		p.Result.Max = &max
@@ -251,7 +122,7 @@ func (p *RaintankProbePing) Run() error {
 		loss := 0.0
 		p.Result.Loss = &loss
 	} else {
-		loss := 100.0 * (float64(failCount) / float64(successCount+failCount))
+		loss := 100.0 * (float64(failCount) / float64(results.Sent))
 		p.Result.Loss = &loss
 	}
 	if *p.Result.Loss == 100.0 {
