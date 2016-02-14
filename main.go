@@ -42,7 +42,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		sendError(w, 500, err)
 		return
 	}
-	result, err := RunCheck(check)
+	err = check.Run()
+	result := check.Results()
 	if err != nil {
 		sendError(w, 500, err)
 		return
@@ -79,16 +80,4 @@ func GetCheck(checkType string, body []byte) (RaintankProbeCheck, error) {
 		return nil, fmt.Errorf("unknown check type. " + checkType)
 	}
 
-}
-
-func RunCheck(check RaintankProbeCheck) (interface{}, error) {
-	resultChan := make(chan error)
-	//run the check in a goroutine.
-	go func() {
-		//push the return into the resultChan
-		resultChan <- check.Run()
-	}()
-
-	err := <-resultChan
-	return check.Results(), err
 }
