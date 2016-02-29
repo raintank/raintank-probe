@@ -55,7 +55,7 @@ func NewRaintankHTTPSProbe(body []byte) (*RaintankProbeHTTPS, error) {
 		return nil, err
 	}
 	if p.Port == "" {
-		p.Port = "80"
+		p.Port = "443"
 	}
 	if !strings.HasPrefix(p.Path, "/") {
 		p.Path = "/" + p.Path
