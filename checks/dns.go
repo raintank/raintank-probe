@@ -25,7 +25,7 @@ var recordTypeToWireType = map[DnsRecordType]uint16{
 	"AAAA":  dns.TypeAAAA,
 	"CNAME": dns.TypeCNAME,
 	"MX":    dns.TypeMX,
-	"NX":    dns.TypeNS,
+	"NS":    dns.TypeNS,
 	"PTR":   dns.TypePTR,
 	"SOA":   dns.TypeSOA,
 	"SRV":   dns.TypeSRV,
