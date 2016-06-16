@@ -1,7 +1,6 @@
 package checks
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
 	"net"
@@ -9,6 +8,10 @@ import (
 	"time"
 
 	"github.com/raintank/go-pinger"
+	"github.com/raintank/raintank-metric/schema"
+	"github.com/raintank/raintank-probe/probe"
+	"github.com/raintank/worldping-api/pkg/log"
+	m "github.com/raintank/worldping-api/pkg/models"
 )
 
 // Number of pings to send to the host.
@@ -24,41 +27,185 @@ func init() {
 // results. we use pointers so that missing data will be
 // encoded as 'null' in the json response.
 type PingResult struct {
-	Loss  *float64 `json:"loss"`
-	Min   *float64 `json:"min"`
-	Max   *float64 `json:"max"`
-	Avg   *float64 `json:"avg"`
-	Mean  *float64 `json:"mean"`
-	Mdev  *float64 `json:"mdev"`
-	Error *string  `json:"error"`
+	Loss   *float64 `json:"loss"`
+	Min    *float64 `json:"min"`
+	Max    *float64 `json:"max"`
+	Avg    *float64 `json:"avg"`
+	Median *float64 `json:"median"`
+	Mdev   *float64 `json:"mdev"`
+	Error  *string  `json:"error"`
+}
+
+func (r *PingResult) ErrorMsg() string {
+	if r.Error == nil {
+		return ""
+	}
+	return *r.Error
+}
+
+func (r *PingResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricData {
+	metrics := make([]*schema.MetricData, 0)
+	if r.Loss != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("worldping.%s.%s.ping.loss", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "worldping.ping.loss",
+			Interval:   int(check.Frequency),
+			Unit:       "percent",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
+				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				"checkType:ping",
+			},
+			Value: *r.Loss,
+		})
+	}
+	if r.Min != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("worldping.%s.%s.ping.min", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "worldping.ping.min",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
+				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				"checkType:ping",
+			},
+			Value: *r.Min,
+		})
+	}
+	if r.Max != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("worldping.%s.%s.ping.max", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "worldping.ping.max",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
+				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				"checkType:ping",
+			},
+			Value: *r.Max,
+		})
+	}
+	if r.Median != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("worldping.%s.%s.ping.median", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "worldping.ping.median",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
+				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				"checkType:ping",
+			},
+			Value: *r.Median,
+		})
+	}
+	if r.Mdev != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("worldping.%s.%s.ping.mdev", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "worldping.ping.mdev",
+			Interval:   int(check.Frequency),
+			Unit:       "percent",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
+				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				"checkType:ping",
+			},
+			Value: *r.Mdev,
+		})
+	}
+	if r.Avg != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("worldping.%s.%s.ping.avg", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "worldping.ping.avg",
+			Interval:   int(check.Frequency),
+			Unit:       "percent",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
+				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				"checkType:ping",
+			},
+			Value: *r.Avg,
+		})
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("worldping.%s.%s.ping.default", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "worldping.ping.default",
+			Interval:   int(check.Frequency),
+			Unit:       "percent",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
+				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				"checkType:ping",
+			},
+			Value: *r.Avg,
+		})
+	}
+
+	return metrics
 }
 
 // Our check definition.
 type RaintankProbePing struct {
-	Hostname string      `json:"hostname"`
-	Timeout  int         `json:"timeout"`
-	Result   *PingResult `json:"-"`
+	Hostname string        `json:"hostname"`
+	Timeout  time.Duration `json:"timeout"`
 }
 
 // parse the json request body to build our check definition.
-func NewRaintankPingProbe(body []byte) (*RaintankProbePing, error) {
+func NewRaintankPingProbe(settings map[string]interface{}) (*RaintankProbePing, error) {
 	p := RaintankProbePing{}
-	err := json.Unmarshal(body, &p)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse settings. " + err.Error())
+	host, ok := settings["hostname"]
+	if !ok {
+		return nil, fmt.Errorf("no hostname passed.")
 	}
+	p.Hostname, ok = host.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid value for host, must be string.")
+	}
+	if p.Hostname == "" {
+		return nil, fmt.Errorf("no host passed.")
+	}
+
+	timeout, ok := settings["timeout"]
+	if !ok {
+		return nil, fmt.Errorf("no timeout passed.")
+	}
+	t, ok := timeout.(float64)
+	if !ok {
+		return nil, fmt.Errorf("invalid value for timeout, must be number.")
+	}
+	if t <= 0.0 {
+		return nil, fmt.Errorf("invalid value for timeout, must be greater then 0.")
+	}
+	p.Timeout = time.Duration(time.Millisecond * time.Duration(int(1000.0*t)))
+
 	return &p, nil
 }
 
-// return the results of the check
-func (p *RaintankProbePing) Results() interface{} {
-	return p.Result
-}
-
-// run the check. this is executed in a goroutine.
-func (p *RaintankProbePing) Run() error {
-	deadline := time.Now().Add(time.Second * time.Duration(p.Timeout))
-	p.Result = &PingResult{}
+func (p *RaintankProbePing) Run() (CheckResult, error) {
+	deadline := time.Now().Add(p.Timeout)
+	result := &PingResult{}
 
 	var ipAddr string
 
@@ -66,19 +213,19 @@ func (p *RaintankProbePing) Run() error {
 	addrs, err := net.LookupHost(p.Hostname)
 	if err != nil || len(addrs) < 1 {
 		msg := "failed to resolve hostname to IP."
-		p.Result.Error = &msg
-		return nil
+		result.Error = &msg
+		return result, nil
 	}
 	if time.Now().After(deadline) {
 		msg := "timeout resolving IP address of hostname."
-		p.Result.Error = &msg
-		return nil
+		result.Error = &msg
+		return result, nil
 	}
 	ipAddr = addrs[0]
 
 	resultsChan, err := GlobalPinger.Ping(ipAddr, count, deadline)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	results := <-resultsChan
@@ -109,26 +256,28 @@ func (p *RaintankProbePing) Run() error {
 
 	if successCount > 0 {
 		avg := tsum / float64(successCount)
-		p.Result.Avg = &avg
+		result.Avg = &avg
 		root := math.Sqrt((tsum2 / float64(successCount)) - ((tsum / float64(successCount)) * (tsum / float64(successCount))))
-		p.Result.Mdev = &root
+		result.Mdev = &root
 		sort.Float64s(measurements)
-		mean := measurements[successCount/2]
-		p.Result.Mean = &mean
-		p.Result.Min = &min
-		p.Result.Max = &max
+		median := measurements[successCount/2]
+		result.Median = &median
+		result.Min = &min
+		result.Max = &max
 	}
 	if failCount == 0 {
 		loss := 0.0
-		p.Result.Loss = &loss
+		result.Loss = &loss
 	} else {
 		loss := 100.0 * (float64(failCount) / float64(results.Sent))
-		p.Result.Loss = &loss
+		result.Loss = &loss
 	}
-	if *p.Result.Loss == 100.0 {
-		error := "100% packet loss"
-		p.Result.Error = &error
+	if *result.Loss == 100.0 {
+		errorMsg := "100% packet loss"
+		result.Error = &errorMsg
 	}
 
-	return nil
+	log.Debug("Ping check completed.")
+
+	return result, nil
 }
