@@ -1,0 +1,23 @@
+machine:
+  environment:
+    GOPATH: "/home/ubuntu/.go_workspace"
+test:
+  override:
+    - go test -v -race ./...
+    - go vet ./...
+  post:
+    - scripts/package.sh
+dependencies:
+  pre:
+    - if [[ ! -e /usr/local/go-1.6 ]]; then sudo mv /usr/local/go /usr/local/go-1.5.1; wget https://storage.googleapis.com/golang/go1.6.1.linux-amd64.tar.gz && sudo tar -C /usr/local -zxf go1.6.1.linux-amd64.tar.gz && sudo mv /usr/local/go /usr/local/go-1.6 && sudo ln -s /usr/local/go-1.6 /usr/local/go; fi
+  override:
+    - scripts/depends.sh
+    - scripts/build.sh
+general:
+  artifacts:
+    - build/artifacts
+deployment:
+  production:
+    branch: master
+    commands:
+      - scripts/deploy.sh
