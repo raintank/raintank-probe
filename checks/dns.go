@@ -207,7 +207,10 @@ func (p *RaintankProbeDns) Run() (CheckResult, error) {
 	// fix failed to respond with upper case
 	c := dns.Client{Net: p.Protocol}
 	m := dns.Msg{}
-	m.SetQuestion(p.RecordName+".", recordTypeToWireType[p.RecordType])
+	if !strings.HasSuffix(p.RecordName, ".") {
+		p.RecordName = p.RecordName + "."
+	}
+	m.SetQuestion(p.RecordName, recordTypeToWireType[p.RecordType])
 
 	for _, s := range p.Servers {
 		if time.Now().After(deadline) {
