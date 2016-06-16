@@ -18,6 +18,7 @@ import (
 	"github.com/rakyll/globalconf"
 
 	"github.com/raintank/raintank-probe/probe"
+	"github.com/raintank/raintank-probe/publisher"
 	"github.com/raintank/raintank-probe/scheduler"
 )
 
@@ -102,6 +103,12 @@ func main() {
 	if controllerUrl.Scheme != "ws" && controllerUrl.Scheme != "wss" {
 		log.Fatal(4, "invalid server address.  scheme must be ws or wss. was %s", controllerUrl.Scheme)
 	}
+
+	tsdbUrl, err := url.Parse(*tsdbAddr)
+	if err != nil {
+		log.Fatal(4, "Invalid TSDB url.", err)
+	}
+	publisher.Init(tsdbUrl, *apiKey)
 
 	client, err := gosocketio.Dial(controllerUrl.String(), transport.GetDefaultWebsocketTransport())
 	if err != nil {

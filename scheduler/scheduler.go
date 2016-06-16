@@ -8,6 +8,7 @@ import (
 	"github.com/raintank/raintank-metric/schema"
 	"github.com/raintank/raintank-probe/checks"
 	"github.com/raintank/raintank-probe/probe"
+	"github.com/raintank/raintank-probe/publisher"
 	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
 )
@@ -56,7 +57,9 @@ func (i *CheckInstance) Update(c *m.MonitorDTO) error {
 }
 
 func (i *CheckInstance) Stop() {
-	i.Ticker.Stop()
+	if i.Ticker != nil {
+		i.Ticker.Stop()
+	}
 }
 
 func (c *CheckInstance) Run() {
@@ -102,12 +105,40 @@ func (c *CheckInstance) run(t time.Time) {
 				c.StateChange = time.Now()
 				//send Error event.
 				log.Info("%s is in error state", desc)
+				event := schema.ProbeEvent{
+					EventType: "monitor_state",
+					OrgId:     c.Check.OrgId,
+					Severity:  "ERROR",
+					Source:    "monitor_collector",
+					Timestamp: t.UnixNano() / int64(time.Millisecond),
+					Message:   msg,
+					Tags: map[string]string{
+						"endpoint":     c.Check.EndpointSlug,
+						"collector":    probe.Self.Slug,
+						"monitor_type": c.Check.MonitorTypeName,
+					},
+				}
+				publisher.Publisher.AddEvent(&event)
 			}
 		} else if c.State != newState {
 			c.State = newState
 			c.StateChange = time.Now()
 			//send OK event.
 			log.Info("%s is now in OK state", desc)
+			event := schema.ProbeEvent{
+				EventType: "monitor_state",
+				OrgId:     c.Check.OrgId,
+				Severity:  "OK",
+				Source:    "monitor_collector",
+				Timestamp: t.UnixNano() / int64(time.Millisecond),
+				Message:   "Monitor now Ok.",
+				Tags: map[string]string{
+					"endpoint":     c.Check.EndpointSlug,
+					"collector":    probe.Self.Slug,
+					"monitor_type": c.Check.MonitorTypeName,
+				},
+			}
+			publisher.Publisher.AddEvent(&event)
 		}
 	}
 
@@ -149,7 +180,12 @@ func (c *CheckInstance) run(t time.Time) {
 		Value: errState,
 	})
 
+	for _, m := range metrics {
+		m.SetId()
+	}
+
 	//publish metrics to TSDB
+	publisher.Publisher.Add(metrics)
 }
 
 type Scheduler struct {
