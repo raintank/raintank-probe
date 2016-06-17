@@ -98,7 +98,7 @@ func main() {
 		log.Fatal(4, err.Error())
 	}
 	controllerUrl.Path = path.Clean(controllerUrl.Path + "/socket.io")
-	controllerUrl.RawQuery = fmt.Sprintf("EIO=3&transport=websocket&apiKey=%s&name=%s&version=1.5.0", *apiKey, *nodeName)
+	controllerUrl.RawQuery = fmt.Sprintf("EIO=3&transport=websocket&apiKey=%s&name=%s&version=1.5.0", *apiKey, url.QueryEscape(*nodeName))
 
 	if controllerUrl.Scheme != "ws" && controllerUrl.Scheme != "wss" {
 		log.Fatal(4, "invalid server address.  scheme must be ws or wss. was %s", controllerUrl.Scheme)
