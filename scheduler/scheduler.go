@@ -252,17 +252,55 @@ func (s *Scheduler) Refresh(checks []*m.MonitorDTO) {
 
 func (s *Scheduler) Create(check *m.MonitorDTO) {
 	log.Debug("creating %s check for %s", check.MonitorTypeName, check.EndpointSlug)
-
+	s.Lock()
+	if existing, ok := s.Checks[check.Id]; ok {
+		log.Warn("recieved create event for check that is already running. checkId=%d", check.Id)
+		existing.Stop()
+		delete(s.Checks, check.Id)
+	}
+	instance, err := NewCheckInstance(check)
+	if err != nil {
+		log.Error(3, "Unabled to create new check instance for checkId=%d.", check.Id, err)
+	} else {
+		s.Checks[check.Id] = instance
+	}
+	s.Unlock()
 	return
 }
 
 func (s *Scheduler) Update(check *m.MonitorDTO) {
 	log.Debug("updating %s check for %s", check.MonitorTypeName, check.EndpointSlug)
+	s.Lock()
+	if existing, ok := s.Checks[check.Id]; !ok {
+		log.Warn("recieved update event for check that is not currently running. checkId=%d", check.Id)
+		instance, err := NewCheckInstance(check)
+		if err != nil {
+			log.Error(3, "Unabled to create new check instance for checkId=%d.", check.Id, err)
+		} else {
+			s.Checks[check.Id] = instance
+		}
+	} else {
+		err := existing.Update(check)
+		if err != nil {
+			log.Error(3, "Unable to update check instance for checkId=%d", check.Id, err)
+			existing.Stop()
+			delete(s.Checks, check.Id)
+		}
+	}
+	s.Unlock()
 	return
 }
 
 func (s *Scheduler) Remove(check *m.MonitorDTO) {
 	log.Debug("removing %s check for %s", check.MonitorTypeName, check.EndpointSlug)
+	s.Lock()
+	if existing, ok := s.Checks[check.Id]; !ok {
+		log.Warn("recieved remove event for check that is not currently running. checkId=%d", check.Id)
+	} else {
+		existing.Stop()
+		delete(s.Checks, check.Id)
+	}
+	s.Unlock()
 	return
 }
 
