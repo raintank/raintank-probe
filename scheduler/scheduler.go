@@ -152,8 +152,8 @@ func (c *CheckInstance) run(t time.Time) {
 	}
 	metrics = append(metrics, &schema.MetricData{
 		OrgId:      int(c.Check.OrgId),
-		Name:       fmt.Sprintf("worldping.%s.%s.http.ok_state", c.Check.EndpointSlug, probe.Self.Slug),
-		Metric:     "worldping.http.ok_state",
+		Name:       fmt.Sprintf("litmus.%s.%s.%s.ok_state", c.Check.EndpointSlug, probe.Self.Slug, c.Check.MonitorTypeName),
+		Metric:     fmt.Sprintf("litmus.%s.ok_state", c.Check.MonitorTypeName),
 		Interval:   int(c.Check.Frequency),
 		Unit:       "state",
 		TargetType: "gauge",
@@ -161,13 +161,13 @@ func (c *CheckInstance) run(t time.Time) {
 		Tags: []string{
 			fmt.Sprintf("endpoint:%s", c.Check.EndpointSlug),
 			fmt.Sprintf("probe:%s", probe.Self.Slug),
-			"checkType:http",
+			fmt.Sprintf("checkType:%s", c.Check.MonitorTypeName),
 		},
 		Value: okState,
 	}, &schema.MetricData{
 		OrgId:      int(c.Check.OrgId),
-		Name:       fmt.Sprintf("worldping.%s.%s.http.error_state", c.Check.EndpointSlug, probe.Self.Slug),
-		Metric:     "worldping.http.error_state",
+		Name:       fmt.Sprintf("litmus.%s.%s.%s.error_state", c.Check.EndpointSlug, probe.Self.Slug, c.Check.MonitorTypeName),
+		Metric:     fmt.Sprintf("litmus.%s.error_state", c.Check.MonitorTypeName),
 		Interval:   int(c.Check.Frequency),
 		Unit:       "state",
 		TargetType: "gauge",
@@ -175,7 +175,7 @@ func (c *CheckInstance) run(t time.Time) {
 		Tags: []string{
 			fmt.Sprintf("endpoint:%s", c.Check.EndpointSlug),
 			fmt.Sprintf("probe:%s", probe.Self.Slug),
-			"checkType:http",
+			fmt.Sprintf("checkType:%s", c.Check.MonitorTypeName),
 		},
 		Value: errState,
 	})
