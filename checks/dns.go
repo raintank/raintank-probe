@@ -32,8 +32,8 @@ func (r *DnsResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricDa
 	if r.Time != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("worldping.%s.%s.dns.time", check.EndpointSlug, probe.Self.Slug),
-			Metric:     "worldping.dns.time",
+			Name:       fmt.Sprintf("litmus.%s.%s.dns.time", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "litmus.dns.time",
 			Interval:   int(check.Frequency),
 			Unit:       "ms",
 			TargetType: "gauge",
@@ -49,8 +49,8 @@ func (r *DnsResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricDa
 	if r.Ttl != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("worldping.%s.%s.dns.ttl", check.EndpointSlug, probe.Self.Slug),
-			Metric:     "worldping.dns.ttl",
+			Name:       fmt.Sprintf("litmus.%s.%s.dns.ttl", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "litmus.dns.ttl",
 			Interval:   int(check.Frequency),
 			Unit:       "s",
 			TargetType: "gauge",
@@ -66,8 +66,8 @@ func (r *DnsResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricDa
 	if r.Answers != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("worldping.%s.%s.dns.answers", check.EndpointSlug, probe.Self.Slug),
-			Metric:     "worldping.dns.time",
+			Name:       fmt.Sprintf("litmus.%s.%s.dns.answers", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "litmus.dns.time",
 			Interval:   int(check.Frequency),
 			Unit:       "count",
 			TargetType: "gauge",
