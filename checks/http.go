@@ -335,7 +335,7 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 	request, err := http.NewRequest(p.Method, url, sendBody)
 
 	if err != nil {
-		msg := fmt.Sprintf("Invalid request settings. %s", err.Error)
+		msg := fmt.Sprintf("Invalid request settings. %s", err.Error())
 		result.Error = &msg
 		return result, nil
 	}
