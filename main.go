@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/graarh/golang-socketio"
@@ -98,7 +99,8 @@ func main() {
 		log.Fatal(4, err.Error())
 	}
 	controllerUrl.Path = path.Clean(controllerUrl.Path + "/socket.io")
-	controllerUrl.RawQuery = fmt.Sprintf("EIO=3&transport=websocket&apiKey=%s&name=%s&version=1.5.0", *apiKey, url.QueryEscape(*nodeName))
+	version := strings.Split(GitHash, "-")[0]
+	controllerUrl.RawQuery = fmt.Sprintf("EIO=3&transport=websocket&apiKey=%s&name=%s&version=%s", *apiKey, url.QueryEscape(*nodeName), version)
 
 	if controllerUrl.Scheme != "ws" && controllerUrl.Scheme != "wss" {
 		log.Fatal(4, "invalid server address.  scheme must be ws or wss. was %s", controllerUrl.Scheme)
