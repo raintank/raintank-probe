@@ -290,12 +290,14 @@ func NewRaintankHTTPProbe(settings map[string]interface{}) (*RaintankProbeHTTP, 
 	}
 
 	timeout, ok := settings["timeout"]
+	var t float64
 	if !ok {
-		return nil, fmt.Errorf("no timeout passed.")
-	}
-	t, ok := timeout.(float64)
-	if !ok {
-		return nil, fmt.Errorf("invalid value for timeout, must be number.")
+		t = 5.0
+	} else {
+		t, ok = timeout.(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for timeout, must be number.")
+		}
 	}
 	if t <= 0.0 {
 		return nil, fmt.Errorf("invalid value for timeout, must be greater then 0.")
@@ -331,6 +333,12 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 	url := fmt.Sprintf("http://%s%s%s", p.Host, tmpPort, p.Path)
 	sendBody := bytes.NewReader([]byte(p.Body))
 	request, err := http.NewRequest(p.Method, url, sendBody)
+
+	if err != nil {
+		msg := fmt.Sprintf("Invalid request settings. %s", err.Error)
+		result.Error = &msg
+		return result, nil
+	}
 
 	// Parsing header (use fake request)
 	if p.Headers != "" {

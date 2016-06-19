@@ -252,6 +252,9 @@ func NewRaintankHTTPSProbe(settings map[string]interface{}) (*RaintankProbeHTTPS
 	if !ok {
 		return nil, fmt.Errorf("invalid value for path, must be string.")
 	}
+	if p.Path == "" {
+		p.Path = "/"
+	}
 
 	method, ok := settings["method"]
 	if !ok {
@@ -304,12 +307,14 @@ func NewRaintankHTTPSProbe(settings map[string]interface{}) (*RaintankProbeHTTPS
 	}
 
 	timeout, ok := settings["timeout"]
+	var t float64
 	if !ok {
-		return nil, fmt.Errorf("no timeout passed.")
-	}
-	t, ok := timeout.(float64)
-	if !ok {
-		return nil, fmt.Errorf("invalid value for timeout, must be number.")
+		t = 5.0
+	} else {
+		t, ok = timeout.(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for timeout, must be number.")
+		}
 	}
 	if t <= 0.0 {
 		return nil, fmt.Errorf("invalid value for timeout, must be greater then 0.")
@@ -345,6 +350,12 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 	url := fmt.Sprintf("https://%s%s%s", p.Host, tmpPort, p.Path)
 	sendBody := bytes.NewReader([]byte(p.Body))
 	request, err := http.NewRequest(p.Method, url, sendBody)
+
+	if err != nil {
+		msg := fmt.Sprintf("Invalid request settings. %s", err.Error)
+		result.Error = &msg
+		return result, nil
+	}
 
 	// Parsing header (use fake request)
 	if p.Headers != "" {
