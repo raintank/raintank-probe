@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"path"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/graarh/golang-socketio"
@@ -30,10 +31,11 @@ var (
 	logLevel    = flag.Int("log-level", 2, "log level. 0=TRACE|1=DEBUG|2=INFO|3=WARN|4=ERROR|5=CRITICAL|6=FATAL")
 	confFile    = flag.String("config", "/etc/raintank/probe.ini", "configuration file path")
 
-	serverAddr = flag.String("server-url", "ws://localhost:80/", "addres of worldping-api server")
-	tsdbAddr   = flag.String("tsdb-url", "http://localhost:80/", "addres of tsdb server")
-	nodeName   = flag.String("name", "", "agent-name")
-	apiKey     = flag.String("api-key", "not_very_secret_key", "Api Key")
+	serverAddr  = flag.String("server-url", "ws://localhost:80/", "addres of worldping-api server")
+	tsdbAddr    = flag.String("tsdb-url", "http://localhost:80/", "addres of tsdb server")
+	nodeName    = flag.String("name", "", "agent-name")
+	apiKey      = flag.String("api-key", "not_very_secret_key", "Api Key")
+	concurrency = flag.Int("concurrency", 20, "concurrency number of requests to TSDB.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
 )
@@ -98,7 +100,8 @@ func main() {
 		log.Fatal(4, err.Error())
 	}
 	controllerUrl.Path = path.Clean(controllerUrl.Path + "/socket.io")
-	controllerUrl.RawQuery = fmt.Sprintf("EIO=3&transport=websocket&apiKey=%s&name=%s&version=1.5.0", *apiKey, url.QueryEscape(*nodeName))
+	version := strings.Split(GitHash, "-")[0]
+	controllerUrl.RawQuery = fmt.Sprintf("EIO=3&transport=websocket&apiKey=%s&name=%s&version=%s", *apiKey, url.QueryEscape(*nodeName), version)
 
 	if controllerUrl.Scheme != "ws" && controllerUrl.Scheme != "wss" {
 		log.Fatal(4, "invalid server address.  scheme must be ws or wss. was %s", controllerUrl.Scheme)
@@ -108,7 +111,10 @@ func main() {
 	if err != nil {
 		log.Fatal(4, "Invalid TSDB url.", err)
 	}
-	publisher.Init(tsdbUrl, *apiKey)
+	if !strings.HasPrefix(tsdbUrl.Path, "/") {
+		tsdbUrl.Path += "/"
+	}
+	publisher.Init(tsdbUrl, *apiKey, *concurrency)
 
 	client, err := gosocketio.Dial(controllerUrl.String(), transport.GetDefaultWebsocketTransport())
 	if err != nil {

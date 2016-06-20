@@ -188,12 +188,14 @@ func NewRaintankPingProbe(settings map[string]interface{}) (*RaintankProbePing, 
 	}
 
 	timeout, ok := settings["timeout"]
+	var t float64
 	if !ok {
-		return nil, fmt.Errorf("no timeout passed.")
-	}
-	t, ok := timeout.(float64)
-	if !ok {
-		return nil, fmt.Errorf("invalid value for timeout, must be number.")
+		t = 5.0
+	} else {
+		t, ok = timeout.(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for timeout, must be number.")
+		}
 	}
 	if t <= 0.0 {
 		return nil, fmt.Errorf("invalid value for timeout, must be greater then 0.")

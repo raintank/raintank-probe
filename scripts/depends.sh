@@ -6,7 +6,7 @@ cd ${DIR}
 
 : ${GOPATH:="${HOME}/.go_workspace"}
 : ${ORG_PATH:="github.com/raintank"}
-: ${REPO_PATH:="${ORG_PATH}/raintank"}
+: ${REPO_PATH:="${ORG_PATH}/raintank-probe"}
 
 if [ ! -z ${CIRCLECI} ] ; then
   : ${CHECKOUT:="/home/ubuntu/${CIRCLE_PROJECT_REPONAME}"}

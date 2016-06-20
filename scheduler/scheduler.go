@@ -209,7 +209,7 @@ func (s *Scheduler) Close() {
 }
 
 func (s *Scheduler) Refresh(checks []*m.MonitorDTO) {
-	log.Debug("refreshing checks, there are %d", len(checks))
+	log.Info("refreshing checks, there are %d", len(checks))
 	seenChecks := make(map[int64]struct{})
 	s.Lock()
 	for _, c := range checks {
@@ -251,7 +251,7 @@ func (s *Scheduler) Refresh(checks []*m.MonitorDTO) {
 }
 
 func (s *Scheduler) Create(check *m.MonitorDTO) {
-	log.Debug("creating %s check for %s", check.MonitorTypeName, check.EndpointSlug)
+	log.Info("creating %s check for %s", check.MonitorTypeName, check.EndpointSlug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; ok {
 		log.Warn("recieved create event for check that is already running. checkId=%d", check.Id)
@@ -269,7 +269,7 @@ func (s *Scheduler) Create(check *m.MonitorDTO) {
 }
 
 func (s *Scheduler) Update(check *m.MonitorDTO) {
-	log.Debug("updating %s check for %s", check.MonitorTypeName, check.EndpointSlug)
+	log.Info("updating %s check for %s", check.MonitorTypeName, check.EndpointSlug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; !ok {
 		log.Warn("recieved update event for check that is not currently running. checkId=%d", check.Id)
@@ -292,7 +292,7 @@ func (s *Scheduler) Update(check *m.MonitorDTO) {
 }
 
 func (s *Scheduler) Remove(check *m.MonitorDTO) {
-	log.Debug("removing %s check for %s", check.MonitorTypeName, check.EndpointSlug)
+	log.Info("removing %s check for %s", check.MonitorTypeName, check.EndpointSlug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; !ok {
 		log.Warn("recieved remove event for check that is not currently running. checkId=%d", check.Id)

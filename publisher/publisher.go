@@ -19,12 +19,18 @@ var (
 	maxMetricsPerPayload = 3000
 )
 
-func Init(u *url.URL, apiKey string) {
-	Publisher = NewTsdb(u, apiKey)
+type tsdbData struct {
+	Path string
+	Body []byte
+}
+
+func Init(u *url.URL, apiKey string, concurrency int) {
+	Publisher = NewTsdb(u, apiKey, concurrency)
 }
 
 type Tsdb struct {
 	sync.Mutex
+	Concurrency  int
 	Url          *url.URL
 	ApiKey       string
 	Metrics      []*schema.MetricData
@@ -32,15 +38,18 @@ type Tsdb struct {
 	triggerFlush chan struct{}
 	LastFlush    time.Time
 	closeChan    chan struct{}
+	dataChan     chan tsdbData
 }
 
-func NewTsdb(u *url.URL, apiKey string) *Tsdb {
+func NewTsdb(u *url.URL, apiKey string, concurrency int) *Tsdb {
 	t := &Tsdb{
 		Metrics:      make([]*schema.MetricData, 0),
 		triggerFlush: make(chan struct{}),
 		Events:       make(chan *schema.ProbeEvent, 1000),
 		Url:          u,
 		ApiKey:       apiKey,
+		Concurrency:  concurrency,
+		dataChan:     make(chan tsdbData, 1000),
 	}
 	go t.Run()
 	return t
@@ -50,7 +59,19 @@ func (t *Tsdb) Add(metrics []*schema.MetricData) {
 	t.Lock()
 	t.Metrics = append(t.Metrics, metrics...)
 	if len(t.Metrics) > maxMetricsPerPayload {
-		t.triggerFlush <- struct{}{}
+		ticker := time.NewTicker(time.Second)
+		pre := time.Now()
+	FLUSHLOOP:
+		for {
+			select {
+			case <-ticker.C:
+				wait := time.Since(pre)
+				log.Warn("unable to flush metrics fast enough. waited %f seconds", wait.Seconds())
+			case t.triggerFlush <- struct{}{}:
+				ticker.Stop()
+				break FLUSHLOOP
+			}
+		}
 	}
 	t.Unlock()
 }
@@ -77,18 +98,13 @@ func (t *Tsdb) Flush() {
 		log.Error(3, "unable to convert metrics to MetricDataArrayMsgp.", "error", err)
 		return
 	}
-	sent := false
-	for !sent {
-		if err = t.PostData("metrics", body); err != nil {
-			log.Error(3, err.Error())
-			time.Sleep(time.Second)
-		} else {
-			sent = true
-		}
-	}
+	t.dataChan <- tsdbData{Path: "metrics", Body: body}
 }
 
 func (t *Tsdb) Run() {
+	for i := 0; i < t.Concurrency; i++ {
+		go t.sendData()
+	}
 	ticker := time.NewTicker(time.Second)
 	for {
 		select {
@@ -99,6 +115,7 @@ func (t *Tsdb) Run() {
 		case e := <-t.Events:
 			t.SendEvent(e)
 		case <-t.closeChan:
+			close(t.dataChan)
 			return
 		}
 	}
@@ -108,12 +125,41 @@ func (t *Tsdb) Close() {
 	t.closeChan <- struct{}{}
 }
 
-func (t *Tsdb) PostData(path string, body []byte) error {
-	u := t.Url.String() + path
-	req, err := http.NewRequest("POST", u, bytes.NewBuffer(body))
-	req.Header.Set("Content-Type", "rt-metric-binary")
-	req.Header.Set("Authorization", "Bearer "+t.ApiKey)
+func (t *Tsdb) sendData() {
+	counter := 0
+	last := time.Now()
+	ticker := time.NewTicker(time.Second * 10)
+	for {
+		select {
+		case <-ticker.C:
+			log.Info("published %d payloads in last %f seconds", counter, time.Since(last).Seconds())
+			counter = 0
+			last = time.Now()
+		case data := <-t.dataChan:
+			counter++
+			u := t.Url.String() + data.Path
+			req, err := http.NewRequest("POST", u, bytes.NewBuffer(data.Body))
+			if err != nil {
+				log.Error(3, "failed to create request payload. ", err)
+				break
+			}
+			req.Header.Set("Content-Type", "rt-metric-binary")
+			req.Header.Set("Authorization", "Bearer "+t.ApiKey)
 
+			sent := false
+			for !sent {
+				if err := send(req); err != nil {
+					log.Error(3, err.Error())
+					time.Sleep(time.Second)
+				} else {
+					sent = true
+				}
+			}
+		}
+	}
+}
+
+func send(req *http.Request) error {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -133,13 +179,5 @@ func (t *Tsdb) SendEvent(event *schema.ProbeEvent) {
 		log.Error(3, "Unable to convert event to ProbeEventMsgp.", "error", err)
 		return
 	}
-	sent := false
-	for !sent {
-		if err = t.PostData("events", body); err != nil {
-			log.Error(3, err.Error())
-			time.Sleep(time.Second)
-		} else {
-			sent = true
-		}
-	}
+	t.dataChan <- tsdbData{Path: "events", Body: body}
 }
