@@ -2,6 +2,7 @@ package publisher
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -132,18 +133,24 @@ func (t *Tsdb) sendData() {
 	for {
 		select {
 		case <-ticker.C:
-			log.Info("published %d payloads in last %f seconds", counter, time.Since(last).Seconds())
-			counter = 0
-			last = time.Now()
+			if counter > 0 {
+				log.Info("published %d payloads in last %f seconds", counter, time.Since(last).Seconds())
+				counter = 0
+				last = time.Now()
+			}
 		case data := <-t.dataChan:
-			counter++
+
 			u := t.Url.String() + data.Path
-			req, err := http.NewRequest("POST", u, bytes.NewBuffer(data.Body))
+			body := new(bytes.Buffer)
+			gzBody := gzip.NewWriter(body)
+			gzBody.Write(data.Body)
+			gzBody.Close()
+			req, err := http.NewRequest("POST", u, body)
 			if err != nil {
 				log.Error(3, "failed to create request payload. ", err)
 				break
 			}
-			req.Header.Set("Content-Type", "rt-metric-binary")
+			req.Header.Set("Content-Type", "rt-metric-binary-gz")
 			req.Header.Set("Authorization", "Bearer "+t.ApiKey)
 
 			sent := false
@@ -151,10 +158,15 @@ func (t *Tsdb) sendData() {
 				if err := send(req); err != nil {
 					log.Error(3, err.Error())
 					time.Sleep(time.Second)
+					body.Reset()
+					gzBody := gzip.NewWriter(body)
+					gzBody.Write(data.Body)
+					gzBody.Close()
 				} else {
 					sent = true
 				}
 			}
+			counter++
 		}
 	}
 }
