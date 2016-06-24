@@ -35,7 +35,7 @@ var (
 	tsdbAddr    = flag.String("tsdb-url", "http://localhost:80/", "addres of tsdb server")
 	nodeName    = flag.String("name", "", "agent-name")
 	apiKey      = flag.String("api-key", "not_very_secret_key", "Api Key")
-	concurrency = flag.Int("concurrency", 20, "concurrency number of requests to TSDB.")
+	concurrency = flag.Int("concurrency", 5, "concurrency number of requests to TSDB.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
 )
