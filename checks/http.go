@@ -52,9 +52,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.DNS,
 		})
@@ -69,9 +69,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Connect,
 		})
@@ -86,9 +86,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Send,
 		})
@@ -103,9 +103,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Wait,
 		})
@@ -120,9 +120,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Recv,
 		})
@@ -137,9 +137,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Total,
 		})
@@ -152,9 +152,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Total,
 		})
@@ -169,9 +169,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "rate",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Throughput,
 		})
@@ -186,9 +186,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.DataLength,
 		})
@@ -203,9 +203,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:http",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.StatusCode,
 		})

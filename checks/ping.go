@@ -55,9 +55,9 @@ func (r *PingResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:ping",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Loss,
 		})
@@ -72,9 +72,9 @@ func (r *PingResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:ping",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Min,
 		})
@@ -89,9 +89,9 @@ func (r *PingResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:ping",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Max,
 		})
@@ -106,9 +106,9 @@ func (r *PingResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:ping",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Median,
 		})
@@ -119,13 +119,13 @@ func (r *PingResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			Name:       fmt.Sprintf("litmus.%s.%s.ping.mdev", check.EndpointSlug, probe.Self.Slug),
 			Metric:     "litmus.ping.mdev",
 			Interval:   int(check.Frequency),
-			Unit:       "percent",
+			Unit:       "ms",
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:ping",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Mdev,
 		})
@@ -133,16 +133,16 @@ func (r *PingResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 	if r.Avg != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.ping.avg", check.EndpointSlug, probe.Self.Slug),
-			Metric:     "litmus.ping.avg",
+			Name:       fmt.Sprintf("litmus.%s.%s.ping.mean", check.EndpointSlug, probe.Self.Slug),
+			Metric:     "litmus.ping.mean",
 			Interval:   int(check.Frequency),
-			Unit:       "percent",
+			Unit:       "ms",
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:ping",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Avg,
 		})
@@ -151,13 +151,13 @@ func (r *PingResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 			Name:       fmt.Sprintf("litmus.%s.%s.ping.default", check.EndpointSlug, probe.Self.Slug),
 			Metric:     "litmus.ping.default",
 			Interval:   int(check.Frequency),
-			Unit:       "percent",
+			Unit:       "ms",
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.EndpointSlug),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-				"checkType:ping",
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
 			},
 			Value: *r.Avg,
 		})

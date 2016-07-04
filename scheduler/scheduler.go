@@ -172,9 +172,9 @@ func (c *CheckInstance) run(t time.Time) {
 		TargetType: "gauge",
 		Time:       t.Unix(),
 		Tags: []string{
-			fmt.Sprintf("endpoint:%s", c.Check.EndpointSlug),
-			fmt.Sprintf("probe:%s", probe.Self.Slug),
-			fmt.Sprintf("checkType:%s", c.Check.MonitorTypeName),
+			fmt.Sprintf("endpoint_id:%d", c.Check.EndpointId),
+			fmt.Sprintf("monitor_id:%d", c.Check.Id),
+			fmt.Sprintf("collector:%s", probe.Self.Slug),
 		},
 		Value: okState,
 	}, &schema.MetricData{
@@ -186,9 +186,9 @@ func (c *CheckInstance) run(t time.Time) {
 		TargetType: "gauge",
 		Time:       t.Unix(),
 		Tags: []string{
-			fmt.Sprintf("endpoint:%s", c.Check.EndpointSlug),
-			fmt.Sprintf("probe:%s", probe.Self.Slug),
-			fmt.Sprintf("checkType:%s", c.Check.MonitorTypeName),
+			fmt.Sprintf("endpoint_id:%d", c.Check.EndpointId),
+			fmt.Sprintf("monitor_id:%d", c.Check.Id),
+			fmt.Sprintf("collector:%s", probe.Self.Slug),
 		},
 		Value: errState,
 	})
