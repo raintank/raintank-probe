@@ -22,6 +22,7 @@ type CheckInstance struct {
 	Exec        RaintankProbeCheck
 	Check       *m.MonitorDTO
 	State       m.CheckEvalResult
+	LastRun     time.Time
 	StateChange time.Time
 	LastError   string
 	sync.Mutex
@@ -57,9 +58,11 @@ func (i *CheckInstance) Update(c *m.MonitorDTO) error {
 }
 
 func (i *CheckInstance) Stop() {
+	i.Lock()
 	if i.Ticker != nil {
 		i.Ticker.Stop()
 	}
+	i.Unlock()
 }
 
 func (c *CheckInstance) Run() {
@@ -83,6 +86,16 @@ func (c *CheckInstance) Run() {
 }
 
 func (c *CheckInstance) run(t time.Time) {
+	if !c.LastRun.IsZero() {
+		delta := time.Since(c.LastRun)
+		freq := time.Duration(c.Check.Frequency) * time.Second
+		if delta > (freq + time.Duration(100)*time.Millisecond) {
+			log.Warn("check is running late by %d milliseconds", delta/time.Millisecond)
+		}
+	}
+	c.Lock()
+	c.LastRun = t
+	c.Unlock()
 	desc := fmt.Sprintf("%s check for %s", c.Check.MonitorTypeName, c.Check.EndpointSlug)
 	log.Debug("Running %s", desc)
 	results, err := c.Exec.Run()
