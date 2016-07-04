@@ -275,14 +275,14 @@ func (s *Scheduler) Update(check *m.MonitorDTO) {
 		log.Warn("recieved update event for check that is not currently running. checkId=%d", check.Id)
 		instance, err := NewCheckInstance(check)
 		if err != nil {
-			log.Error(3, "Unabled to create new check instance for checkId=%d.", check.Id, err)
+			log.Error(3, "Unabled to create new check instance for checkId=%d. %s", check.Id, err)
 		} else {
 			s.Checks[check.Id] = instance
 		}
 	} else {
 		err := existing.Update(check)
 		if err != nil {
-			log.Error(3, "Unable to update check instance for checkId=%d", check.Id, err)
+			log.Error(3, "Unable to update check instance for checkId=%d, %s", check.Id, err)
 			existing.Stop()
 			delete(s.Checks, check.Id)
 		}

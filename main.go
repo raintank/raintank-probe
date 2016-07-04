@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"os/signal"
@@ -31,13 +33,16 @@ var (
 	logLevel    = flag.Int("log-level", 2, "log level. 0=TRACE|1=DEBUG|2=INFO|3=WARN|4=ERROR|5=CRITICAL|6=FATAL")
 	confFile    = flag.String("config", "/etc/raintank/probe.ini", "configuration file path")
 
-	serverAddr  = flag.String("server-url", "ws://localhost:80/", "addres of worldping-api server")
-	tsdbAddr    = flag.String("tsdb-url", "http://localhost:80/", "addres of tsdb server")
-	nodeName    = flag.String("name", "", "agent-name")
-	apiKey      = flag.String("api-key", "not_very_secret_key", "Api Key")
-	concurrency = flag.Int("concurrency", 5, "concurrency number of requests to TSDB.")
+	serverAddr       = flag.String("server-url", "ws://localhost:80/", "addres of worldping-api server")
+	tsdbAddr         = flag.String("tsdb-url", "http://localhost:80/", "addres of tsdb server")
+	nodeName         = flag.String("name", "", "agent-name")
+	apiKey           = flag.String("api-key", "not_very_secret_key", "Api Key")
+	concurrency      = flag.Int("concurrency", 5, "concurrency number of requests to TSDB.")
+	publicChecksFile = flag.String("public-checks", "./publicChecks.json", "path to publicChecks json file.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
+
+	PublicChecks []m.MonitorDTO
 )
 
 func main() {
@@ -88,6 +93,15 @@ func main() {
 
 	if *nodeName == "" {
 		log.Fatal(4, "name must be set.")
+	}
+
+	file, err := ioutil.ReadFile(*publicChecksFile)
+	if err != nil {
+		log.Fatal(4, err.Error())
+	}
+	err = json.Unmarshal(file, &PublicChecks)
+	if err != nil {
+		log.Fatal(4, err.Error())
 	}
 
 	jobScheduler := scheduler.New()
@@ -148,6 +162,12 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 		}
 	})
 	client.On("refresh", func(c *gosocketio.Channel, checks []*m.MonitorDTO) {
+		if probe.Self.Public {
+			for _, c := range PublicChecks {
+				check := c
+				checks = append(checks, &check)
+			}
+		}
 		jobScheduler.Refresh(checks)
 	})
 	client.On("created", func(c *gosocketio.Channel, check m.MonitorDTO) {
@@ -171,6 +191,7 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 		queryParams := controllerUrl.Query()
 		queryParams["lastSocketId"] = []string{event.SocketId}
 		controllerUrl.RawQuery = queryParams.Encode()
+
 	})
 	client.On("error", func(c *gosocketio.Channel, reason string) {
 		log.Error(3, "Controller emitted an error. %s", reason)
