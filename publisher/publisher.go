@@ -2,7 +2,6 @@ package publisher
 
 import (
 	"bytes"
-	"compress/gzip"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/snappy"
 	"github.com/raintank/raintank-metric/msg"
 	"github.com/raintank/raintank-metric/schema"
 	"github.com/raintank/worldping-api/pkg/log"
@@ -142,15 +142,15 @@ func (t *Tsdb) sendData() {
 
 			u := t.Url.String() + data.Path
 			body := new(bytes.Buffer)
-			gzBody := gzip.NewWriter(body)
-			gzBody.Write(data.Body)
-			gzBody.Close()
+			snappyBody := snappy.NewWriter(body)
+			snappyBody.Write(data.Body)
+			snappyBody.Close()
 			req, err := http.NewRequest("POST", u, body)
 			if err != nil {
 				log.Error(3, "failed to create request payload. ", err)
 				break
 			}
-			req.Header.Set("Content-Type", "rt-metric-binary-gz")
+			req.Header.Set("Content-Type", "rt-metric-binary-snappy")
 			req.Header.Set("Authorization", "Bearer "+t.ApiKey)
 
 			sent := false
@@ -159,9 +159,9 @@ func (t *Tsdb) sendData() {
 					log.Error(3, err.Error())
 					time.Sleep(time.Second)
 					body.Reset()
-					gzBody := gzip.NewWriter(body)
-					gzBody.Write(data.Body)
-					gzBody.Close()
+					snappyBody := snappy.NewWriter(body)
+					snappyBody.Write(data.Body)
+					snappyBody.Close()
 				} else {
 					sent = true
 				}
