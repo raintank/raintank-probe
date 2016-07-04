@@ -97,11 +97,12 @@ func main() {
 
 	file, err := ioutil.ReadFile(*publicChecksFile)
 	if err != nil {
-		log.Fatal(4, err.Error())
-	}
-	err = json.Unmarshal(file, &PublicChecks)
-	if err != nil {
-		log.Fatal(4, err.Error())
+		log.Error(3, "Could not read publicChecks file. %s", err.Error())
+	} else {
+		err = json.Unmarshal(file, &PublicChecks)
+		if err != nil {
+			log.Error(3, "Could not parse publicChecks file. %s", err.Error())
+		}
 	}
 
 	jobScheduler := scheduler.New()
