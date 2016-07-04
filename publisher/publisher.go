@@ -17,7 +17,7 @@ import (
 
 var (
 	Publisher            *Tsdb
-	maxMetricsPerPayload = 3000
+	maxMetricsPerPayload = 50000
 )
 
 type tsdbData struct {
@@ -128,14 +128,16 @@ func (t *Tsdb) Close() {
 
 func (t *Tsdb) sendData() {
 	counter := 0
+	bytesSent := 0
 	last := time.Now()
 	ticker := time.NewTicker(time.Second * 10)
 	for {
 		select {
 		case <-ticker.C:
 			if counter > 0 {
-				log.Info("published %d payloads in last %f seconds", counter, time.Since(last).Seconds())
+				log.Info("published %d (%d bytes) payloads in last %f seconds", counter, bytesSent, time.Since(last).Seconds())
 				counter = 0
+				bytesSent = 0
 				last = time.Now()
 			}
 		case data := <-t.dataChan:
@@ -145,6 +147,7 @@ func (t *Tsdb) sendData() {
 			snappyBody := snappy.NewWriter(body)
 			snappyBody.Write(data.Body)
 			snappyBody.Close()
+			bytesSent += body.Len()
 			req, err := http.NewRequest("POST", u, body)
 			if err != nil {
 				log.Error(3, "failed to create request payload. ", err)
