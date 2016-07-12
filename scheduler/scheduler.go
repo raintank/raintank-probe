@@ -20,7 +20,7 @@ type RaintankProbeCheck interface {
 type CheckInstance struct {
 	Ticker      *time.Ticker
 	Exec        RaintankProbeCheck
-	Check       *m.MonitorDTO
+	Check       *m.CheckWithSlug
 	State       m.CheckEvalResult
 	LastRun     time.Time
 	StateChange time.Time
@@ -28,9 +28,9 @@ type CheckInstance struct {
 	sync.Mutex
 }
 
-func NewCheckInstance(c *m.MonitorDTO) (*CheckInstance, error) {
-	log.Info("Creating new CheckInstance for %s check for %s", c.MonitorTypeName, c.EndpointSlug)
-	executor, err := GetCheck(c.MonitorTypeId, m.MonitorSettingsDTO(c.Settings).ToV2Setting(m.CheckType(c.MonitorTypeName)))
+func NewCheckInstance(c *m.CheckWithSlug) (*CheckInstance, error) {
+	log.Info("Creating new CheckInstance for %s check for %s", c.Type, c.Slug)
+	executor, err := GetCheck(c.Type, c.Settings)
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +43,8 @@ func NewCheckInstance(c *m.MonitorDTO) (*CheckInstance, error) {
 	return instance, nil
 }
 
-func (i *CheckInstance) Update(c *m.MonitorDTO) error {
-	executor, err := GetCheck(c.MonitorTypeId, m.MonitorSettingsDTO(c.Settings).ToV2Setting(m.CheckType(c.MonitorTypeName)))
+func (i *CheckInstance) Update(c *m.CheckWithSlug) error {
+	executor, err := GetCheck(c.Type, c.Settings)
 	if err != nil {
 		return err
 	}
@@ -67,13 +67,13 @@ func (i *CheckInstance) Stop() {
 
 func (c *CheckInstance) Run() {
 	c.Lock()
-	log.Info("Starting execution loop for %s check for %s, Frequency: %d, Offset: %d", c.Check.MonitorTypeName, c.Check.EndpointSlug, c.Check.Frequency, c.Check.Offset)
+	log.Info("Starting execution loop for %s check for %s, Frequency: %d, Offset: %d", c.Check.Type, c.Check.Slug, c.Check.Frequency, c.Check.Offset)
 	now := time.Now().Unix()
 	waitTime := ((c.Check.Frequency + c.Check.Offset) - (now % c.Check.Frequency)) % c.Check.Frequency
 	if waitTime == c.Check.Offset {
 		waitTime = 0
 	}
-	log.Debug("executing %s check for %s in %d seconds", c.Check.MonitorTypeName, c.Check.EndpointSlug, waitTime)
+	log.Debug("executing %s check for %s in %d seconds", c.Check.Type, c.Check.Slug, waitTime)
 	if waitTime > 0 {
 		time.Sleep(time.Second * time.Duration(waitTime))
 	}
@@ -96,7 +96,7 @@ func (c *CheckInstance) run(t time.Time) {
 	c.Lock()
 	c.LastRun = t
 	c.Unlock()
-	desc := fmt.Sprintf("%s check for %s", c.Check.MonitorTypeName, c.Check.EndpointSlug)
+	desc := fmt.Sprintf("%s check for %s", c.Check.Type, c.Check.Slug)
 	log.Debug("Running %s", desc)
 	results, err := c.Exec.Run()
 	var metrics []*schema.MetricData
@@ -126,9 +126,9 @@ func (c *CheckInstance) run(t time.Time) {
 					Timestamp: t.UnixNano() / int64(time.Millisecond),
 					Message:   msg,
 					Tags: map[string]string{
-						"endpoint":     c.Check.EndpointSlug,
+						"endpoint":     c.Check.Slug,
 						"collector":    probe.Self.Slug,
-						"monitor_type": c.Check.MonitorTypeName,
+						"monitor_type": string(c.Check.Type),
 					},
 				}
 				publisher.Publisher.AddEvent(&event)
@@ -146,9 +146,9 @@ func (c *CheckInstance) run(t time.Time) {
 				Timestamp: t.UnixNano() / int64(time.Millisecond),
 				Message:   "Monitor now Ok.",
 				Tags: map[string]string{
-					"endpoint":     c.Check.EndpointSlug,
+					"endpoint":     c.Check.Slug,
 					"collector":    probe.Self.Slug,
-					"monitor_type": c.Check.MonitorTypeName,
+					"monitor_type": string(c.Check.Type),
 				},
 			}
 			publisher.Publisher.AddEvent(&event)
@@ -165,8 +165,8 @@ func (c *CheckInstance) run(t time.Time) {
 	}
 	metrics = append(metrics, &schema.MetricData{
 		OrgId:      int(c.Check.OrgId),
-		Name:       fmt.Sprintf("litmus.%s.%s.%s.ok_state", c.Check.EndpointSlug, probe.Self.Slug, c.Check.MonitorTypeName),
-		Metric:     fmt.Sprintf("litmus.%s.ok_state", c.Check.MonitorTypeName),
+		Name:       fmt.Sprintf("litmus.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
+		Metric:     fmt.Sprintf("litmus.%s.ok_state", c.Check.Type),
 		Interval:   int(c.Check.Frequency),
 		Unit:       "state",
 		TargetType: "gauge",
@@ -179,8 +179,8 @@ func (c *CheckInstance) run(t time.Time) {
 		Value: okState,
 	}, &schema.MetricData{
 		OrgId:      int(c.Check.OrgId),
-		Name:       fmt.Sprintf("litmus.%s.%s.%s.error_state", c.Check.EndpointSlug, probe.Self.Slug, c.Check.MonitorTypeName),
-		Metric:     fmt.Sprintf("litmus.%s.error_state", c.Check.MonitorTypeName),
+		Name:       fmt.Sprintf("litmus.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
+		Metric:     fmt.Sprintf("litmus.%s.error_state", c.Check.Type),
 		Interval:   int(c.Check.Frequency),
 		Unit:       "state",
 		TargetType: "gauge",
@@ -221,7 +221,7 @@ func (s *Scheduler) Close() {
 	return
 }
 
-func (s *Scheduler) Refresh(checks []*m.MonitorDTO) {
+func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 	log.Info("refreshing checks, there are %d", len(checks))
 	seenChecks := make(map[int64]struct{})
 	s.Lock()
@@ -263,8 +263,8 @@ func (s *Scheduler) Refresh(checks []*m.MonitorDTO) {
 	return
 }
 
-func (s *Scheduler) Create(check *m.MonitorDTO) {
-	log.Info("creating %s check for %s", check.MonitorTypeName, check.EndpointSlug)
+func (s *Scheduler) Create(check *m.CheckWithSlug) {
+	log.Info("creating %s check for %s", check.Type, check.Slug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; ok {
 		log.Warn("recieved create event for check that is already running. checkId=%d", check.Id)
@@ -281,8 +281,8 @@ func (s *Scheduler) Create(check *m.MonitorDTO) {
 	return
 }
 
-func (s *Scheduler) Update(check *m.MonitorDTO) {
-	log.Info("updating %s check for %s", check.MonitorTypeName, check.EndpointSlug)
+func (s *Scheduler) Update(check *m.CheckWithSlug) {
+	log.Info("updating %s check for %s", check.Type, check.Slug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; !ok {
 		log.Warn("recieved update event for check that is not currently running. checkId=%d", check.Id)
@@ -304,8 +304,8 @@ func (s *Scheduler) Update(check *m.MonitorDTO) {
 	return
 }
 
-func (s *Scheduler) Remove(check *m.MonitorDTO) {
-	log.Info("removing %s check for %s", check.MonitorTypeName, check.EndpointSlug)
+func (s *Scheduler) Remove(check *m.CheckWithSlug) {
+	log.Info("removing %s check for %s", check.Type, check.Slug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; !ok {
 		log.Warn("recieved remove event for check that is not currently running. checkId=%d", check.Id)
@@ -317,18 +317,18 @@ func (s *Scheduler) Remove(check *m.MonitorDTO) {
 	return
 }
 
-func GetCheck(checkType int64, settings map[string]interface{}) (RaintankProbeCheck, error) {
+func GetCheck(checkType m.CheckType, settings map[string]interface{}) (RaintankProbeCheck, error) {
 	switch checkType {
-	case 3:
+	case m.PING_CHECK:
 		return checks.NewRaintankPingProbe(settings)
-	case 4:
+	case m.DNS_CHECK:
 		return checks.NewRaintankDnsProbe(settings)
-	case 1:
+	case m.HTTP_CHECK:
 		return checks.NewRaintankHTTPProbe(settings)
-	case 2:
+	case m.HTTPS_CHECK:
 		return checks.NewRaintankHTTPSProbe(settings)
 	default:
-		return nil, fmt.Errorf("unknown check type %d ", checkType)
+		return nil, fmt.Errorf("unknown check type %s ", checkType)
 	}
 
 }

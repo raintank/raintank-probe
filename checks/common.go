@@ -8,6 +8,6 @@ import (
 )
 
 type CheckResult interface {
-	Metrics(time.Time, *m.MonitorDTO) []*schema.MetricData
+	Metrics(time.Time, *m.CheckWithSlug) []*schema.MetricData
 	ErrorMsg() string
 }

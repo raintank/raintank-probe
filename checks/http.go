@@ -40,12 +40,12 @@ func (r *HTTPResult) ErrorMsg() string {
 	return *r.Error
 }
 
-func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricData {
+func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.MetricData {
 	metrics := make([]*schema.MetricData, 0)
 	if r.DNS != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.dns", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.dns", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.dns",
 			Interval:   int(check.Frequency),
 			Unit:       "ms",
@@ -62,7 +62,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 	if r.Connect != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.connect", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.connect", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.connect",
 			Interval:   int(check.Frequency),
 			Unit:       "ms",
@@ -79,7 +79,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 	if r.Send != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.send", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.send", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.send",
 			Interval:   int(check.Frequency),
 			Unit:       "ms",
@@ -96,7 +96,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 	if r.Wait != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.wait", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.wait", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.wait",
 			Interval:   int(check.Frequency),
 			Unit:       "ms",
@@ -113,7 +113,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 	if r.Recv != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.recv", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.recv", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.recv",
 			Interval:   int(check.Frequency),
 			Unit:       "ms",
@@ -130,7 +130,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 	if r.Total != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.total", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.total", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.total",
 			Interval:   int(check.Frequency),
 			Unit:       "ms",
@@ -145,7 +145,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 		})
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.default", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.default", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.default",
 			Interval:   int(check.Frequency),
 			Unit:       "ms",
@@ -162,7 +162,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 	if r.Throughput != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.throughput", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.throughput", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.throughput",
 			Interval:   int(check.Frequency),
 			Unit:       "bytes",
@@ -179,7 +179,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 	if r.DataLength != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.dataLength", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.dataLength", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.dataLength",
 			Interval:   int(check.Frequency),
 			Unit:       "bytess",
@@ -196,7 +196,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricD
 	if r.StatusCode != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.statusCode", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.http.statusCode", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.statusCode",
 			Interval:   int(check.Frequency),
 			Unit:       "code",
@@ -308,9 +308,13 @@ func NewRaintankHTTPProbe(settings map[string]interface{}) (*RaintankProbeHTTP, 
 	if !ok {
 		p.Port = 80
 	} else {
-		p.Port, ok = port.(int64)
-		if !ok {
-			return nil, fmt.Errorf("invalid value for port, must be integer.")
+		switch port.(type) {
+		case float64:
+			p.Port = int64(port.(float64))
+		case int64:
+			p.Port = port.(int64)
+		default:
+			return nil, fmt.Errorf("invalid value for port, must be number.")
 		}
 	}
 	if p.Port < 1 || p.Port > 65535 {

@@ -27,12 +27,12 @@ func (r *DnsResult) ErrorMsg() string {
 	return *r.Error
 }
 
-func (r *DnsResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricData {
+func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.MetricData {
 	metrics := make([]*schema.MetricData, 0)
 	if r.Time != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.dns.time", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.dns.time", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.dns.time",
 			Interval:   int(check.Frequency),
 			Unit:       "ms",
@@ -49,7 +49,7 @@ func (r *DnsResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricDa
 	if r.Ttl != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.dns.ttl", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.dns.ttl", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.dns.ttl",
 			Interval:   int(check.Frequency),
 			Unit:       "s",
@@ -66,7 +66,7 @@ func (r *DnsResult) Metrics(t time.Time, check *m.MonitorDTO) []*schema.MetricDa
 	if r.Answers != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.dns.answers", check.EndpointSlug, probe.Self.Slug),
+			Name:       fmt.Sprintf("litmus.%s.%s.dns.answers", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.dns.time",
 			Interval:   int(check.Frequency),
 			Unit:       "count",
@@ -175,9 +175,13 @@ func NewRaintankDnsProbe(settings map[string]interface{}) (*RaintankProbeDns, er
 	if !ok {
 		p.Port = 53
 	} else {
-		p.Port, ok = port.(int64)
-		if !ok {
-			return nil, fmt.Errorf("invalid value for port, must be integer.")
+		switch port.(type) {
+		case float64:
+			p.Port = int64(port.(float64))
+		case int64:
+			p.Port = port.(int64)
+		default:
+			return nil, fmt.Errorf("invalid value for port, must be number.")
 		}
 	}
 	if p.Port < 1 || p.Port > 65535 {

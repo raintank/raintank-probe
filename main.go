@@ -42,7 +42,7 @@ var (
 
 	MonitorTypes map[string]m.MonitorTypeDTO
 
-	PublicChecks []m.MonitorDTO
+	PublicChecks []m.CheckWithSlug
 )
 
 func main() {
@@ -162,7 +162,7 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 			}
 		}
 	})
-	client.On("refresh", func(c *gosocketio.Channel, checks []*m.MonitorDTO) {
+	client.On("refresh", func(c *gosocketio.Channel, checks []*m.CheckWithSlug) {
 		if probe.Self.Public {
 			for _, c := range PublicChecks {
 				check := c
@@ -171,13 +171,13 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 		}
 		jobScheduler.Refresh(checks)
 	})
-	client.On("created", func(c *gosocketio.Channel, check m.MonitorDTO) {
+	client.On("created", func(c *gosocketio.Channel, check m.CheckWithSlug) {
 		jobScheduler.Create(&check)
 	})
-	client.On("updated", func(c *gosocketio.Channel, check m.MonitorDTO) {
+	client.On("updated", func(c *gosocketio.Channel, check m.CheckWithSlug) {
 		jobScheduler.Update(&check)
 	})
-	client.On("removed", func(c *gosocketio.Channel, check m.MonitorDTO) {
+	client.On("removed", func(c *gosocketio.Channel, check m.CheckWithSlug) {
 		jobScheduler.Remove(&check)
 	})
 
@@ -185,10 +185,6 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 		log.Info("server sent ready event. ProbeId=%d", event.Collector.Id)
 		probe.Self = event.Collector
 
-		MonitorTypes = make(map[string]m.MonitorTypeDTO)
-		for _, t := range event.MonitorTypes {
-			MonitorTypes[t.Name] = t
-		}
 		queryParams := controllerUrl.Query()
 		queryParams["lastSocketId"] = []string{event.SocketId}
 		controllerUrl.RawQuery = queryParams.Encode()
