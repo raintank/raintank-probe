@@ -14,6 +14,7 @@ mkdir -p ${BUILD}/etc/init
 mkdir -p ${BUILD}/etc/raintank
 
 cp ${BASE}/etc/probe.ini ${BUILD}/etc/raintank/
+cp $CODE_DIR/publicChecks.json ${BUILD}/etc/raintank/
 cp ${BASE}/etc/init/raintank-probe.conf ${BUILD}/etc/init
 mv ${BUILD}/raintank-probe ${BUILD}/usr/bin/
 
