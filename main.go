@@ -33,12 +33,12 @@ var (
 	logLevel    = flag.Int("log-level", 2, "log level. 0=TRACE|1=DEBUG|2=INFO|3=WARN|4=ERROR|5=CRITICAL|6=FATAL")
 	confFile    = flag.String("config", "/etc/raintank/probe.ini", "configuration file path")
 
-	serverAddr       = flag.String("server-url", "ws://localhost:80/", "addres of worldping-api server")
-	tsdbAddr         = flag.String("tsdb-url", "http://localhost:80/", "addres of tsdb server")
+	serverAddr       = flag.String("server-url", "ws://localhost:80/", "address of worldping-api server")
+	tsdbAddr         = flag.String("tsdb-url", "http://localhost:80/", "address of tsdb server")
 	nodeName         = flag.String("name", "", "agent-name")
 	apiKey           = flag.String("api-key", "not_very_secret_key", "Api Key")
 	concurrency      = flag.Int("concurrency", 5, "concurrency number of requests to TSDB.")
-	publicChecksFile = flag.String("public-checks", "./publicChecks.json", "path to publicChecks json file.")
+	publicChecksFile = flag.String("public-checks", "/etc/raintank/publicChecks.json", "path to publicChecks json file.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
 
