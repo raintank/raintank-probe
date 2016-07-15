@@ -10,6 +10,9 @@ GITVERSION=`git describe --always`
 SOURCEDIR=${DIR}/..
 BUILDDIR=$SOURCEDIR/build
 
+# Disable CGO for builds.
+export CGO_ENABLED=0
+
 # Make dir
 mkdir -p $BUILDDIR
 
