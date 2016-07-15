@@ -15,7 +15,6 @@ import (
 
 	"github.com/graarh/golang-socketio"
 	"github.com/graarh/golang-socketio/transport"
-	"github.com/raintank/worldping-api/pkg/api"
 	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
 	"github.com/rakyll/globalconf"
@@ -181,7 +180,7 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 		jobScheduler.Remove(&check)
 	})
 
-	client.On("ready", func(c *gosocketio.Channel, event api.ReadyPayload) {
+	client.On("ready", func(c *gosocketio.Channel, event m.ProbeReadyPayload) {
 		log.Info("server sent ready event. ProbeId=%d", event.Collector.Id)
 		probe.Self = event.Collector
 
