@@ -18,6 +18,6 @@ general:
     - build/artifacts
 deployment:
   production:
-    branch: newProbe
+    branch: master
     commands:
       - scripts/deploy.sh
