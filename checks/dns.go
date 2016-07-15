@@ -1,12 +1,14 @@
 package checks
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/miekg/dns"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/miekg/dns"
+	"github.com/raintank/raintank-metric/schema"
+	"github.com/raintank/raintank-probe/probe"
+	m "github.com/raintank/worldping-api/pkg/models"
 )
 
 // results. we use pointers so that missing data will be
@@ -16,6 +18,70 @@ type DnsResult struct {
 	Ttl     *uint32  `json:"ttl"`
 	Answers *int     `json:"answers"`
 	Error   *string  `json:"error"`
+}
+
+func (r *DnsResult) ErrorMsg() string {
+	if r.Error == nil {
+		return ""
+	}
+	return *r.Error
+}
+
+func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.MetricData {
+	metrics := make([]*schema.MetricData, 0)
+	if r.Time != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.dns.time", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.dns.time",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.Time,
+		})
+	}
+	if r.Ttl != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.dns.ttl", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.dns.ttl",
+			Interval:   int(check.Frequency),
+			Unit:       "s",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: float64(*r.Ttl),
+		})
+	}
+	if r.Answers != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.dns.answers", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.dns.time",
+			Interval:   int(check.Frequency),
+			Unit:       "count",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: float64(*r.Answers),
+		})
+	}
+
+	return metrics
 }
 
 type DnsRecordType string
@@ -39,78 +105,129 @@ func (t *DnsRecordType) IsValid() bool {
 
 // Our check definition.
 type RaintankProbeDns struct {
-	RecordName string        `json:"name"`
-	RecordType DnsRecordType `json:"type"`
-	Server     string        `json:"server"`
-	Port       string        `json:"port"`
-	Protocol   string        `json:"protocol"`
-	Timeout    int           `json:"timeout"`
-	Result     *DnsResult    `json:"-"`
+	RecordName string
+	RecordType DnsRecordType
+	Servers    []string
+	Port       int64
+	Protocol   string
+	Timeout    time.Duration
 }
 
-// parse the json request body to build our check definition.
-func NewRaintankDnsProbe(body []byte) (*RaintankProbeDns, error) {
+func NewRaintankDnsProbe(settings map[string]interface{}) (*RaintankProbeDns, error) {
 	p := RaintankProbeDns{}
-	err := json.Unmarshal(body, &p)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse settings. " + err.Error())
+	recordName, ok := settings["name"]
+	if !ok {
+		return nil, fmt.Errorf("no record name passed.")
 	}
-	if p.Port == "" {
-		p.Port = "53"
+	p.RecordName, ok = recordName.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid value for name, must be string.")
+	}
+	if p.RecordName == "" {
+		return nil, fmt.Errorf("no record name passed.")
 	}
 
-	if p.Protocol == "" {
-		p.Protocol = "udp"
+	recordType, ok := settings["type"]
+	if !ok {
+		return nil, fmt.Errorf("no record type passed.")
 	}
-	p.Protocol = strings.ToLower(p.Protocol)
+	rt, ok := recordType.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid value for type, must be string.")
+	}
+	rType := DnsRecordType(rt)
+	if !rType.IsValid() {
+		return nil, fmt.Errorf("invalid record type passed.")
+	}
+
+	p.RecordType = rType
+
+	servers, ok := settings["server"]
+	if !ok {
+		return nil, fmt.Errorf("no servers passed.")
+	}
+	serverList, ok := servers.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid value for server, must be string.")
+	}
+
+	p.Servers = strings.Split(serverList, ",")
+	if len(p.Servers) == 0 {
+		return nil, fmt.Errorf("no servers passed.")
+	}
+
+	timeout, ok := settings["timeout"]
+	var t float64
+	if !ok {
+		t = 5.0
+	} else {
+		t, ok = timeout.(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for timeout, must be number.")
+		}
+	}
+	if t <= 0.0 {
+		return nil, fmt.Errorf("invalid value for timeout, must be greater then 0.")
+	}
+	p.Timeout = time.Duration(time.Millisecond * time.Duration(int(1000.0*t)))
+
+	port, ok := settings["port"]
+	if !ok {
+		p.Port = 53
+	} else {
+		switch port.(type) {
+		case float64:
+			p.Port = int64(port.(float64))
+		case int64:
+			p.Port = port.(int64)
+		default:
+			return nil, fmt.Errorf("invalid value for port, must be number.")
+		}
+	}
+	if p.Port < 1 || p.Port > 65535 {
+		return nil, fmt.Errorf("invalid port number.")
+	}
+
+	proto, ok := settings["protocol"]
+	if !ok {
+		p.Protocol = "udp"
+	} else {
+		p.Protocol, ok = proto.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for protocol, must be string.")
+		}
+		p.Protocol = strings.ToLower(p.Protocol)
+
+	}
+	if !(p.Protocol == "udp" || p.Protocol == "tcp") {
+		return nil, fmt.Errorf("invalid protocol.")
+	}
 
 	return &p, nil
 }
 
-// return the results of the check
-func (p *RaintankProbeDns) Results() interface{} {
-	return p.Result
-}
-
 // run the check. this is executed in a goroutine.
-func (p *RaintankProbeDns) Run() error {
+func (p *RaintankProbeDns) Run() (CheckResult, error) {
 	deadline := time.Now().Add(time.Second * time.Duration(p.Timeout))
-	p.Result = &DnsResult{}
-
-	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
-		msg := "Invalid port"
-		p.Result.Error = &msg
-		return nil
-	}
-
-	if !(p.Protocol == "udp" || p.Protocol == "tcp") {
-		msg := "Invalid protocol"
-		p.Result.Error = &msg
-		return nil
-	}
-
-	if !p.RecordType.IsValid() {
-		msg := "Invlid record type. " + string(p.RecordType)
-		p.Result.Error = &msg
-		return nil
-	}
-
-	servers := strings.Split(p.Server, ",")
+	result := &DnsResult{}
 	// fix failed to respond with upper case
 	c := dns.Client{Net: p.Protocol}
 	m := dns.Msg{}
-	m.SetQuestion(p.RecordName+".", recordTypeToWireType[p.RecordType])
+	if !strings.HasSuffix(p.RecordName, ".") {
+		p.RecordName = p.RecordName + "."
+	}
+	m.SetQuestion(p.RecordName, recordTypeToWireType[p.RecordType])
 
-	for _, s := range servers {
+	for _, s := range p.Servers {
 		if time.Now().After(deadline) {
 			msg := "timeout looking up dns record."
-			p.Result.Error = &msg
-			return nil
+			result.Error = &msg
+			return result, nil
 		}
 		//trim any leading/training whitespace.
 		server := strings.Trim(s, " ")
 
-		srvPort := server + ":" + p.Port
+		srvPort := fmt.Sprintf("%s:%d", server, p.Port)
 		start := time.Now()
 		r, t, err := c.Exchange(&m, srvPort)
 		if err != nil || r == nil {
@@ -122,16 +239,16 @@ func (p *RaintankProbeDns) Run() error {
 			t = time.Since(start)
 		}
 		duration := t.Seconds() * 1000
-		p.Result.Time = &duration
+		result.Time = &duration
 		answers := len(r.Answer)
-		p.Result.Answers = &answers
+		result.Answers = &answers
 		if answers > 0 {
 			ttl := r.Answer[0].Header().Ttl
-			p.Result.Ttl = &ttl
+			result.Ttl = &ttl
 		}
-		return nil
+		return result, nil
 	}
 	msg := "All target servers failed to respond"
-	p.Result.Error = &msg
-	return nil
+	result.Error = &msg
+	return result, nil
 }

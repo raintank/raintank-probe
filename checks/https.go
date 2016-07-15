@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,6 +15,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/raintank/raintank-metric/schema"
+	"github.com/raintank/raintank-probe/probe"
+	m "github.com/raintank/worldping-api/pkg/models"
 )
 
 // HTTPSResult struct
@@ -33,64 +36,330 @@ type HTTPSResult struct {
 	Error      *string  `json:"error"`
 }
 
+func (r *HTTPSResult) ErrorMsg() string {
+	if r.Error == nil {
+		return ""
+	}
+	return *r.Error
+}
+
+func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.MetricData {
+	metrics := make([]*schema.MetricData, 0)
+	if r.DNS != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.dns", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.dns",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.DNS,
+		})
+	}
+	if r.Connect != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.connect", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.connect",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.Connect,
+		})
+	}
+	if r.Send != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.send", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.send",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.Send,
+		})
+	}
+	if r.Wait != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.wait", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.wait",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.Wait,
+		})
+	}
+	if r.Recv != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.recv", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.recv",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.Recv,
+		})
+	}
+	if r.Total != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.total", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.total",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.Total,
+		})
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.default", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.default",
+			Interval:   int(check.Frequency),
+			Unit:       "ms",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.Total,
+		})
+	}
+	if r.Throughput != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.throughput", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.throughput",
+			Interval:   int(check.Frequency),
+			Unit:       "bytes",
+			TargetType: "rate",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.Throughput,
+		})
+	}
+	if r.DataLength != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.dataLength", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.dataLength",
+			Interval:   int(check.Frequency),
+			Unit:       "bytess",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.DataLength,
+		})
+	}
+	if r.StatusCode != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:      int(check.OrgId),
+			Name:       fmt.Sprintf("litmus.%s.%s.https.statusCode", check.Slug, probe.Self.Slug),
+			Metric:     "litmus.https.statusCode",
+			Interval:   int(check.Frequency),
+			Unit:       "code",
+			TargetType: "gauge",
+			Time:       t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
+				fmt.Sprintf("monitor_id:%d", check.Id),
+				fmt.Sprintf("collector:%s", probe.Self.Slug),
+			},
+			Value: *r.StatusCode,
+		})
+	}
+	return metrics
+}
+
 // RaintankProbeHTTPS struct.
 type RaintankProbeHTTPS struct {
-	Host         string       `json:"host"`
-	Path         string       `json:"path"`
-	Port         string       `json:"port"`
-	ValidateCert string       `json:"validateCert"`
-	Method       string       `json:"method"`
-	Headers      string       `json:"headers"`
-	ExpectRegex  string       `json:"expectRegex"`
-	Timeout      int          `json:"timeout"`
-	Result       *HTTPSResult `json:"-"`
+	Host         string        `json:"host"`
+	Path         string        `json:"path"`
+	Port         int64         `json:"port"`
+	ValidateCert bool          `json:"validateCert"`
+	Method       string        `json:"method"`
+	Headers      string        `json:"headers"`
+	ExpectRegex  string        `json:"expectRegex"`
+	Body         string        `json:"body"`
+	Timeout      time.Duration `json:"timeout"`
 }
 
 // NewRaintankHTTPSProbe json check
-func NewRaintankHTTPSProbe(body []byte) (*RaintankProbeHTTPS, error) {
+func NewRaintankHTTPSProbe(settings map[string]interface{}) (*RaintankProbeHTTPS, error) {
 	p := RaintankProbeHTTPS{}
-	err := json.Unmarshal(body, &p)
-	if err != nil {
-		log.Fatalf("failed to parse settings. %v", err.Error())
-		return nil, err
+	host, ok := settings["host"]
+	if !ok {
+		return nil, fmt.Errorf("no host passed.")
 	}
-	if p.Port == "" {
-		p.Port = "443"
+	p.Host, ok = host.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid value for host, must be string.")
 	}
-	if !strings.HasPrefix(p.Path, "/") {
-		p.Path = "/" + p.Path
+	if p.Host == "" {
+		return nil, fmt.Errorf("no host passed.")
+	}
+
+	path, ok := settings["path"]
+	if !ok {
+		return nil, fmt.Errorf("no path passed.")
+	}
+	p.Path, ok = path.(string)
+	if !ok {
+		return nil, fmt.Errorf("invalid value for path, must be string.")
+	}
+	if p.Path == "" {
+		p.Path = "/"
+	}
+
+	method, ok := settings["method"]
+	if !ok {
+		p.Method = "GET"
+	} else {
+		p.Method, ok = method.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for method, must be string.")
+		}
+	}
+
+	headers, ok := settings["headers"]
+	if !ok {
+		p.Headers = ""
+	} else {
+		p.Headers, ok = headers.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for headers, must be string.")
+		}
+	}
+
+	expectRegex, ok := settings["expectRegex"]
+	if !ok {
+		p.ExpectRegex = ""
+	} else {
+		p.ExpectRegex, ok = expectRegex.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for expectRegex, must be string.")
+		}
+	}
+
+	validateCert, ok := settings["validateCert"]
+	if !ok {
+		p.ValidateCert = true
+	} else {
+		p.ValidateCert, ok = validateCert.(bool)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for validateCert, must be boolean.")
+		}
+	}
+
+	body, ok := settings["body"]
+	if !ok {
+		p.Body = ""
+	} else {
+		p.Body, ok = body.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for body, must be string.")
+		}
+	}
+
+	timeout, ok := settings["timeout"]
+	var t float64
+	if !ok {
+		t = 5.0
+	} else {
+		t, ok = timeout.(float64)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for timeout, must be number.")
+		}
+	}
+	if t <= 0.0 {
+		return nil, fmt.Errorf("invalid value for timeout, must be greater then 0.")
+	}
+	p.Timeout = time.Duration(time.Millisecond * time.Duration(int(1000.0*t)))
+
+	port, ok := settings["port"]
+	if !ok {
+		p.Port = 443
+	} else {
+		switch port.(type) {
+		case float64:
+			p.Port = int64(port.(float64))
+		case int64:
+			p.Port = port.(int64)
+		default:
+			return nil, fmt.Errorf("invalid value for port, must be number.")
+		}
+	}
+	if p.Port < 1 || p.Port > 65535 {
+		return nil, fmt.Errorf("invalid port number.")
 	}
 
 	return &p, nil
 }
 
-// Results interface
-func (p *RaintankProbeHTTPS) Results() interface{} {
-	return p.Result
-}
-
 // Run checking
-func (p *RaintankProbeHTTPS) Run() error {
-	deadline := time.Now().Add(time.Second * time.Duration(p.Timeout))
-	p.Result = &HTTPSResult{}
-
-	if port, err := strconv.ParseInt(p.Port, 10, 32); err != nil || port < 1 || port > 65535 {
-		msg := "Invalid port"
-		p.Result.Error = &msg
-		return nil
-	}
-
-	if p.Method == "" {
-		p.Method = "GET"
-	}
+func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
+	deadline := time.Now().Add(p.Timeout)
+	result := &HTTPSResult{}
 
 	// reader
 	tmpPort := ""
-	if p.Port != "443" {
-		tmpPort = ":" + p.Port
+	if p.Port != 443 {
+		tmpPort = fmt.Sprintf(":%d", p.Port)
 	}
 	url := fmt.Sprintf("https://%s%s%s", p.Host, tmpPort, p.Path)
-	request, err := http.NewRequest(p.Method, url, nil)
+	sendBody := bytes.NewReader([]byte(p.Body))
+	request, err := http.NewRequest(p.Method, url, sendBody)
+
+	if err != nil {
+		msg := fmt.Sprintf("Invalid request settings. %s", err.Error())
+		result.Error = &msg
+		return result, nil
+	}
 
 	// Parsing header (use fake request)
 	if p.Headers != "" {
@@ -98,8 +367,8 @@ func (p *RaintankProbeHTTPS) Run() error {
 		dummyRequest, err := http.ReadRequest(headReader)
 		if err != nil {
 			msg := err.Error()
-			p.Result.Error = &msg
-			return nil
+			result.Error = &msg
+			return result, nil
 		}
 
 		for key := range dummyRequest.Header {
@@ -119,51 +388,72 @@ func (p *RaintankProbeHTTPS) Run() error {
 	addrs, err := net.LookupHost(p.Host)
 	if err != nil || len(addrs) < 1 {
 		msg := "failed to resolve hostname to IP."
-		p.Result.Error = &msg
-		return nil
+		result.Error = &msg
+		return result, nil
 	}
 
 	dnsResolve := time.Since(step).Seconds() * 1000
-	p.Result.DNS = &dnsResolve
+	result.DNS = &dnsResolve
 
-	validate, _ := strconv.ParseBool(p.ValidateCert)
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: !validate,
+		InsecureSkipVerify: !p.ValidateCert,
 		ServerName:         p.Host,
 	}
 
 	// Dialing
 	start := time.Now()
-	tcpconn, err := net.DialTimeout("tcp", addrs[0]+":"+p.Port, 10*time.Second)
+	tcpconn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", addrs[0], p.Port), p.Timeout)
 	if err != nil {
+		opError, ok := err.(*net.OpError)
+		if ok {
+			if opError.Timeout() {
+				msg := "timeout while connecting to host."
+				result.Error = &msg
+				return result, nil
+			}
+			msg := fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+			result.Error = &msg
+			return result, nil
+		}
 		msg := err.Error()
-		p.Result.Error = &msg
-		return nil
+		result.Error = &msg
+		return result, nil
 	}
 	tcpconn.SetDeadline(deadline)
 	conn := tls.Client(tcpconn, tlsConfig)
 	err = conn.Handshake()
 	if err != nil {
 		msg := err.Error()
-		p.Result.Error = &msg
-		return nil
+		result.Error = &msg
+		return result, nil
 	}
 	// Read certificate
 	certs := conn.ConnectionState().PeerCertificates
 
 	defer conn.Close()
 	connecting := time.Since(start).Seconds() * 1000
-	p.Result.Connect = &connecting
+	result.Connect = &connecting
 
 	// Send
 	step = time.Now()
 	if err := request.Write(conn); err != nil {
+		opError, ok := err.(*net.OpError)
+		if ok {
+			if opError.Timeout() {
+				msg := "timeout while sending request."
+				result.Error = &msg
+				return result, nil
+			}
+			msg := fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+			result.Error = &msg
+			return result, nil
+		}
 		msg := err.Error()
-		p.Result.Error = &msg
-		return nil
+		result.Error = &msg
+		return result, nil
 	}
 	send := time.Since(step).Seconds() * 1000
-	p.Result.Send = &send
+	result.Send = &send
 
 	// Wait
 	step = time.Now()
@@ -173,13 +463,24 @@ func (p *RaintankProbeHTTPS) Run() error {
 	_, err = conn.Read(firstData)
 	if err != nil {
 		if err != io.EOF {
-			msg := "Read error"
-			p.Result.Error = &msg
-			return nil
+			opError, ok := err.(*net.OpError)
+			if ok {
+				if opError.Timeout() {
+					msg := "timeout while waiting for response."
+					result.Error = &msg
+					return result, nil
+				}
+				msg := fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+				result.Error = &msg
+				return result, nil
+			}
+			msg := err.Error()
+			result.Error = &msg
+			return result, nil
 		}
 	}
 	wait := time.Since(step).Seconds() * 1000
-	p.Result.Wait = &wait
+	result.Wait = &wait
 
 	//Start recieve
 	step = time.Now()
@@ -194,9 +495,20 @@ func (p *RaintankProbeHTTPS) Run() error {
 		buf.Write(data[:n])
 		if err != nil {
 			if err != io.EOF {
-				msg := "Read error"
-				p.Result.Error = &msg
-				return nil
+				opError, ok := err.(*net.OpError)
+				if ok {
+					if opError.Timeout() {
+						msg := "timeout while receiving response."
+						result.Error = &msg
+						return result, nil
+					}
+					msg := fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+					result.Error = &msg
+					return result, nil
+				}
+				msg := err.Error()
+				result.Error = &msg
+				return result, nil
 			} else {
 				break
 			}
@@ -210,25 +522,25 @@ func (p *RaintankProbeHTTPS) Run() error {
 
 	recv := time.Since(step).Seconds() * 1000
 	total := time.Since(start).Seconds() * 1000
-	p.Result.Total = &total
-	p.Result.Recv = &recv
+	result.Total = &total
+	result.Recv = &recv
 
 	// Data Length
 	dataLength := float64(buf.Len())
-	p.Result.DataLength = &dataLength
+	result.DataLength = &dataLength
 
 	//throughput
 	if recv > 0 && dataLength > 0 {
 		throughput := dataLength / (recv / 1000.0)
-		p.Result.Throughput = &throughput
+		result.Throughput = &throughput
 	}
 
 	response, err := http.ReadResponse(bufio.NewReader(&buf), request)
 
 	if err != nil {
 		msg := err.Error()
-		p.Result.Error = &msg
-		return nil
+		result.Error = &msg
+		return result, nil
 	}
 
 	var reader io.ReadCloser
@@ -240,8 +552,8 @@ func (p *RaintankProbeHTTPS) Run() error {
 			if err != nil {
 				log.Printf("failed to decode content body for request to %s. %s", url, err)
 				msg := err.Error()
-				p.Result.Error = &msg
-				return nil
+				result.Error = &msg
+				return result, nil
 			}
 		default:
 			reader = response.Body
@@ -254,17 +566,17 @@ func (p *RaintankProbeHTTPS) Run() error {
 	reader.Close()
 	if err != nil && len(body) == 0 {
 		msg := err.Error()
-		p.Result.Error = &msg
-		return nil
+		result.Error = &msg
+		return result, nil
 	}
 
 	// Error response
 	statusCode := float64(response.StatusCode)
-	p.Result.StatusCode = &statusCode
+	result.StatusCode = &statusCode
 	if statusCode >= 400 {
 		msg := "Invalid status code " + strconv.Itoa(response.StatusCode)
-		p.Result.Error = &msg
-		return nil
+		result.Error = &msg
+		return result, nil
 	}
 
 	if certs == nil || len(certs) < 1 {
@@ -272,7 +584,7 @@ func (p *RaintankProbeHTTPS) Run() error {
 	} else {
 		timeTilExpiry := certs[0].NotAfter.Sub(time.Now())
 		secondsTilExpiry := float64(timeTilExpiry) / float64(time.Second)
-		p.Result.Expiry = &secondsTilExpiry
+		result.Expiry = &secondsTilExpiry
 	}
 
 	// Regex
@@ -280,16 +592,16 @@ func (p *RaintankProbeHTTPS) Run() error {
 		rgx, err := regexp.Compile(p.ExpectRegex)
 		if err != nil {
 			msg := err.Error()
-			p.Result.Error = &msg
-			return nil
+			result.Error = &msg
+			return result, nil
 		}
 
 		if !rgx.MatchString(string(body)) {
 			msg := "expectRegex did not match"
-			p.Result.Error = &msg
-			return nil
+			result.Error = &msg
+			return result, nil
 		}
 	}
 
-	return nil
+	return result, nil
 }
