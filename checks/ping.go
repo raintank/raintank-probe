@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/raintank/go-pinger"
-	"github.com/raintank/raintank-metric/schema"
 	"github.com/raintank/raintank-probe/probe"
 	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
+	"gopkg.in/raintank/schema.v0"
 )
 
 // Number of pings to send to the host.

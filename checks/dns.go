@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/miekg/dns"
-	"github.com/raintank/raintank-metric/schema"
 	"github.com/raintank/raintank-probe/probe"
 	m "github.com/raintank/worldping-api/pkg/models"
+	"gopkg.in/raintank/schema.v0"
 )
 
 // results. we use pointers so that missing data will be

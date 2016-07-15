@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/raintank/raintank-metric/schema"
 	"github.com/raintank/raintank-probe/checks"
 	"github.com/raintank/raintank-probe/probe"
 	"github.com/raintank/raintank-probe/publisher"
 	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
+	"gopkg.in/raintank/schema.v0"
 )
 
 type RaintankProbeCheck interface {

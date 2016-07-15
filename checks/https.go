@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/raintank/raintank-metric/schema"
 	"github.com/raintank/raintank-probe/probe"
 	m "github.com/raintank/worldping-api/pkg/models"
+	"gopkg.in/raintank/schema.v0"
 )
 
 // HTTPSResult struct

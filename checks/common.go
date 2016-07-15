@@ -3,8 +3,8 @@ package checks
 import (
 	"time"
 
-	"github.com/raintank/raintank-metric/schema"
 	m "github.com/raintank/worldping-api/pkg/models"
+	"gopkg.in/raintank/schema.v0"
 )
 
 type CheckResult interface {
