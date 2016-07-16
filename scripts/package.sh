@@ -21,5 +21,7 @@ mv ${BUILD}/raintank-probe ${BUILD}/usr/bin/
 fpm -s dir -t deb \
   -v ${VERSION} -n raintank-probe -a ${ARCH} --description "Raintank Probe" \
   --deb-upstart ${BASE}/etc/init/raintank-probe.conf \
+  --replaces node-raintank-collector --provides node-raintank-collector \
+  --conflicts node-raintank-collector \
   -C ${BUILD} -p ${PACKAGE_NAME} .
 
