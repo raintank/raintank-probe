@@ -69,7 +69,7 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 			Name:       fmt.Sprintf("litmus.%s.%s.dns.answers", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.dns.time",
 			Interval:   int(check.Frequency),
-			Unit:       "count",
+			Unit:       "",
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
