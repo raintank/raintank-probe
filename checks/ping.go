@@ -72,7 +72,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				"stat:min",
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
 				fmt.Sprintf("collector:%s", probe.Self.Slug),
@@ -90,7 +89,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				"stat:max",
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
 				fmt.Sprintf("collector:%s", probe.Self.Slug),
@@ -108,7 +106,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				"stat:max_50",
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
 				fmt.Sprintf("collector:%s", probe.Self.Slug),
@@ -126,7 +123,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				"stat:std",
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
 				fmt.Sprintf("collector:%s", probe.Self.Slug),
@@ -144,7 +140,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
-				"stat:mean",
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
 				fmt.Sprintf("collector:%s", probe.Self.Slug),
