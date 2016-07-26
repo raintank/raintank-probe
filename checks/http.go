@@ -165,7 +165,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Name:       fmt.Sprintf("litmus.%s.%s.http.throughput", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.throughput",
 			Interval:   int(check.Frequency),
-			Unit:       "bytes",
+			Unit:       "B/s",
 			TargetType: "rate",
 			Time:       t.Unix(),
 			Tags: []string{
@@ -182,7 +182,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Name:       fmt.Sprintf("litmus.%s.%s.http.dataLength", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.dataLength",
 			Interval:   int(check.Frequency),
-			Unit:       "bytess",
+			Unit:       "B",
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
@@ -199,7 +199,7 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Name:       fmt.Sprintf("litmus.%s.%s.http.statusCode", check.Slug, probe.Self.Slug),
 			Metric:     "litmus.http.statusCode",
 			Interval:   int(check.Frequency),
-			Unit:       "code",
+			Unit:       "",
 			TargetType: "gauge",
 			Time:       t.Unix(),
 			Tags: []string{
