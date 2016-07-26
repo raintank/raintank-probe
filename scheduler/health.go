@@ -34,7 +34,7 @@ func (s *Scheduler) CheckHealth() {
 		resultsCh := make(chan int, len(chks))
 		for _, chk := range chks {
 			wg.Add(1)
-			go func(ch chan int) {
+			go func(ch chan int, chk *checks.RaintankProbePing) {
 				defer wg.Done()
 				results, err := chk.Run()
 				if err != nil {
@@ -47,7 +47,7 @@ func (s *Scheduler) CheckHealth() {
 					return
 				}
 				ch <- 0
-			}(resultsCh)
+			}(resultsCh, chk)
 		}
 		wg.Wait()
 		close(resultsCh)
