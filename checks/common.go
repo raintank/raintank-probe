@@ -4,7 +4,7 @@ import (
 	"time"
 
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v0"
+	"gopkg.in/raintank/schema.v1"
 )
 
 type CheckResult interface {

@@ -16,7 +16,7 @@ import (
 
 	"github.com/raintank/raintank-probe/probe"
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v0"
+	"gopkg.in/raintank/schema.v1"
 )
 
 // HTTPResult struct
@@ -44,13 +44,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	metrics := make([]*schema.MetricData, 0)
 	if r.DNS != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.dns", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.dns",
-			Interval:   int(check.Frequency),
-			Unit:       "ms",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.dns", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.dns",
+			Interval: int(check.Frequency),
+			Unit:     "ms",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -61,13 +61,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	}
 	if r.Connect != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.connect", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.connect",
-			Interval:   int(check.Frequency),
-			Unit:       "ms",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.connect", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.connect",
+			Interval: int(check.Frequency),
+			Unit:     "ms",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -78,13 +78,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	}
 	if r.Send != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.send", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.send",
-			Interval:   int(check.Frequency),
-			Unit:       "ms",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.send", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.send",
+			Interval: int(check.Frequency),
+			Unit:     "ms",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -95,13 +95,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	}
 	if r.Wait != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.wait", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.wait",
-			Interval:   int(check.Frequency),
-			Unit:       "ms",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.wait", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.wait",
+			Interval: int(check.Frequency),
+			Unit:     "ms",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -112,13 +112,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	}
 	if r.Recv != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.recv", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.recv",
-			Interval:   int(check.Frequency),
-			Unit:       "ms",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.recv", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.recv",
+			Interval: int(check.Frequency),
+			Unit:     "ms",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -129,13 +129,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	}
 	if r.Total != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.total", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.total",
-			Interval:   int(check.Frequency),
-			Unit:       "ms",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.total", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.total",
+			Interval: int(check.Frequency),
+			Unit:     "ms",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -144,13 +144,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Value: *r.Total,
 		})
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.default", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.default",
-			Interval:   int(check.Frequency),
-			Unit:       "ms",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.default", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.default",
+			Interval: int(check.Frequency),
+			Unit:     "ms",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -161,13 +161,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	}
 	if r.Throughput != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.throughput", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.throughput",
-			Interval:   int(check.Frequency),
-			Unit:       "B/s",
-			TargetType: "rate",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.throughput", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.throughput",
+			Interval: int(check.Frequency),
+			Unit:     "B/s",
+			Mtype:    "rate",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -178,13 +178,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	}
 	if r.DataLength != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.dataLength", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.dataLength",
-			Interval:   int(check.Frequency),
-			Unit:       "B",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.dataLength", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.dataLength",
+			Interval: int(check.Frequency),
+			Unit:     "B",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -195,13 +195,13 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	}
 	if r.StatusCode != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.http.statusCode", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.http.statusCode",
-			Interval:   int(check.Frequency),
-			Unit:       "",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.http.statusCode", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.http.statusCode",
+			Interval: int(check.Frequency),
+			Unit:     "",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),

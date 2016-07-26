@@ -11,8 +11,8 @@ import (
 
 	"github.com/golang/snappy"
 	"github.com/raintank/worldping-api/pkg/log"
-	"gopkg.in/raintank/schema.v0"
-	"gopkg.in/raintank/schema.v0/msg"
+	"gopkg.in/raintank/schema.v1"
+	"gopkg.in/raintank/schema.v1/msg"
 )
 
 var (

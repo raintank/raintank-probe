@@ -10,7 +10,7 @@ import (
 	"github.com/raintank/raintank-probe/publisher"
 	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v0"
+	"gopkg.in/raintank/schema.v1"
 )
 
 type RaintankProbeCheck interface {
@@ -164,13 +164,13 @@ func (c *CheckInstance) run(t time.Time) {
 		okState = 1
 	}
 	metrics = append(metrics, &schema.MetricData{
-		OrgId:      int(c.Check.OrgId),
-		Name:       fmt.Sprintf("litmus.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:     fmt.Sprintf("litmus.%s.ok_state", c.Check.Type),
-		Interval:   int(c.Check.Frequency),
-		Unit:       "state",
-		TargetType: "gauge",
-		Time:       t.Unix(),
+		OrgId:    int(c.Check.OrgId),
+		Name:     fmt.Sprintf("litmus.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
+		Metric:   fmt.Sprintf("litmus.%s.ok_state", c.Check.Type),
+		Interval: int(c.Check.Frequency),
+		Unit:     "state",
+		Mtype:    "gauge",
+		Time:     t.Unix(),
 		Tags: []string{
 			fmt.Sprintf("endpoint_id:%d", c.Check.EndpointId),
 			fmt.Sprintf("monitor_id:%d", c.Check.Id),
@@ -178,13 +178,13 @@ func (c *CheckInstance) run(t time.Time) {
 		},
 		Value: okState,
 	}, &schema.MetricData{
-		OrgId:      int(c.Check.OrgId),
-		Name:       fmt.Sprintf("litmus.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:     fmt.Sprintf("litmus.%s.error_state", c.Check.Type),
-		Interval:   int(c.Check.Frequency),
-		Unit:       "state",
-		TargetType: "gauge",
-		Time:       t.Unix(),
+		OrgId:    int(c.Check.OrgId),
+		Name:     fmt.Sprintf("litmus.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
+		Metric:   fmt.Sprintf("litmus.%s.error_state", c.Check.Type),
+		Interval: int(c.Check.Frequency),
+		Unit:     "state",
+		Mtype:    "gauge",
+		Time:     t.Unix(),
 		Tags: []string{
 			fmt.Sprintf("endpoint_id:%d", c.Check.EndpointId),
 			fmt.Sprintf("monitor_id:%d", c.Check.Id),

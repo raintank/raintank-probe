@@ -8,7 +8,7 @@ import (
 	"github.com/miekg/dns"
 	"github.com/raintank/raintank-probe/probe"
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v0"
+	"gopkg.in/raintank/schema.v1"
 )
 
 // results. we use pointers so that missing data will be
@@ -31,13 +31,13 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 	metrics := make([]*schema.MetricData, 0)
 	if r.Time != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.dns.time", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.dns.time",
-			Interval:   int(check.Frequency),
-			Unit:       "ms",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.dns.time", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.dns.time",
+			Interval: int(check.Frequency),
+			Unit:     "ms",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -48,13 +48,13 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 	}
 	if r.Ttl != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.dns.ttl", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.dns.ttl",
-			Interval:   int(check.Frequency),
-			Unit:       "s",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.dns.ttl", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.dns.ttl",
+			Interval: int(check.Frequency),
+			Unit:     "s",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
@@ -65,13 +65,13 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 	}
 	if r.Answers != nil {
 		metrics = append(metrics, &schema.MetricData{
-			OrgId:      int(check.OrgId),
-			Name:       fmt.Sprintf("litmus.%s.%s.dns.answers", check.Slug, probe.Self.Slug),
-			Metric:     "litmus.dns.time",
-			Interval:   int(check.Frequency),
-			Unit:       "",
-			TargetType: "gauge",
-			Time:       t.Unix(),
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("litmus.%s.%s.dns.answers", check.Slug, probe.Self.Slug),
+			Metric:   "litmus.dns.time",
+			Interval: int(check.Frequency),
+			Unit:     "",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
 			Tags: []string{
 				fmt.Sprintf("endpoint_id:%d", check.EndpointId),
 				fmt.Sprintf("monitor_id:%d", check.Id),
