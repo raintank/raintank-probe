@@ -32,7 +32,8 @@ func (s *Scheduler) CheckHealth() {
 	var wg sync.WaitGroup
 	for range ticker.C {
 		resultsCh := make(chan int, len(chks))
-		for _, chk := range chks {
+		for i := range chks {
+			check := chks[i]
 			wg.Add(1)
 			go func(ch chan int, chk *checks.RaintankProbePing) {
 				defer wg.Done()
@@ -47,7 +48,7 @@ func (s *Scheduler) CheckHealth() {
 					return
 				}
 				ch <- 0
-			}(resultsCh, chk)
+			}(resultsCh, check)
 		}
 		wg.Wait()
 		close(resultsCh)
