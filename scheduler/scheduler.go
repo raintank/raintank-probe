@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,7 +29,7 @@ type CheckInstance struct {
 	sync.Mutex
 }
 
-func NewCheckInstance(c *m.CheckWithSlug) (*CheckInstance, error) {
+func NewCheckInstance(c *m.CheckWithSlug, probeHealthy bool) (*CheckInstance, error) {
 	log.Info("Creating new CheckInstance for %s check for %s", c.Type, c.Slug)
 	executor, err := GetCheck(c.Type, c.Settings)
 	if err != nil {
@@ -39,11 +40,13 @@ func NewCheckInstance(c *m.CheckWithSlug) (*CheckInstance, error) {
 		Exec:  executor,
 		State: m.EvalResultUnknown,
 	}
-	go instance.Run()
+	if probeHealthy {
+		go instance.Run()
+	}
 	return instance, nil
 }
 
-func (i *CheckInstance) Update(c *m.CheckWithSlug) error {
+func (i *CheckInstance) Update(c *m.CheckWithSlug, probeHealthy bool) error {
 	executor, err := GetCheck(c.Type, c.Settings)
 	if err != nil {
 		return err
@@ -53,7 +56,9 @@ func (i *CheckInstance) Update(c *m.CheckWithSlug) error {
 	i.Check = c
 	i.Exec = executor
 	i.Unlock()
-	go i.Run()
+	if probeHealthy {
+		go i.Run()
+	}
 	return nil
 }
 
@@ -165,8 +170,8 @@ func (c *CheckInstance) run(t time.Time) {
 	}
 	metrics = append(metrics, &schema.MetricData{
 		OrgId:    int(c.Check.OrgId),
-		Name:     fmt.Sprintf("litmus.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:   fmt.Sprintf("litmus.%s.ok_state", c.Check.Type),
+		Name:     fmt.Sprintf("worldping.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
+		Metric:   fmt.Sprintf("worldping.%s.ok_state", c.Check.Type),
 		Interval: int(c.Check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
@@ -179,8 +184,8 @@ func (c *CheckInstance) run(t time.Time) {
 		Value: okState,
 	}, &schema.MetricData{
 		OrgId:    int(c.Check.OrgId),
-		Name:     fmt.Sprintf("litmus.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:   fmt.Sprintf("litmus.%s.error_state", c.Check.Type),
+		Name:     fmt.Sprintf("worldping.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
+		Metric:   fmt.Sprintf("worldping.%s.error_state", c.Check.Type),
 		Interval: int(c.Check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
@@ -203,12 +208,22 @@ func (c *CheckInstance) run(t time.Time) {
 
 type Scheduler struct {
 	sync.RWMutex
-	Checks map[int64]*CheckInstance
+	Checks      map[int64]*CheckInstance
+	HealthHosts []string
+	Healthy     bool
 }
 
-func New() *Scheduler {
+func New(healthHosts string) *Scheduler {
+	hosts := make([]string, 0)
+	for _, h := range strings.Split(healthHosts, ",") {
+		host := strings.TrimSpace(h)
+		if host != "" {
+			hosts = append(hosts, host)
+		}
+	}
 	return &Scheduler{
-		Checks: make(map[int64]*CheckInstance),
+		Checks:      make(map[int64]*CheckInstance),
+		HealthHosts: hosts,
 	}
 }
 
@@ -234,7 +249,7 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 			log.Debug("checkId=%d already running", c.Id)
 			if c.Updated.After(existing.Check.Updated) {
 				log.Info("syncing update to checkId=%d", c.Id)
-				err := existing.Update(c)
+				err := existing.Update(c, s.Healthy)
 				if err != nil {
 					log.Error(3, "Unable to update check instance for checkId=%d", c.Id, err)
 					existing.Stop()
@@ -243,7 +258,7 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 			}
 		} else {
 			log.Debug("new check definition found for checkId=%d.", c.Id)
-			instance, err := NewCheckInstance(c)
+			instance, err := NewCheckInstance(c, s.Healthy)
 			if err != nil {
 				log.Error(3, "Unabled to create new check instance for checkId=%d.", c.Id, err)
 			} else {
@@ -271,7 +286,7 @@ func (s *Scheduler) Create(check *m.CheckWithSlug) {
 		existing.Stop()
 		delete(s.Checks, check.Id)
 	}
-	instance, err := NewCheckInstance(check)
+	instance, err := NewCheckInstance(check, s.Healthy)
 	if err != nil {
 		log.Error(3, "Unabled to create new check instance for checkId=%d.", check.Id, err)
 	} else {
@@ -286,14 +301,15 @@ func (s *Scheduler) Update(check *m.CheckWithSlug) {
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; !ok {
 		log.Warn("recieved update event for check that is not currently running. checkId=%d", check.Id)
-		instance, err := NewCheckInstance(check)
+		instance, err := NewCheckInstance(check, s.Healthy)
 		if err != nil {
 			log.Error(3, "Unabled to create new check instance for checkId=%d. %s", check.Id, err)
 		} else {
 			s.Checks[check.Id] = instance
 		}
+
 	} else {
-		err := existing.Update(check)
+		err := existing.Update(check, s.Healthy)
 		if err != nil {
 			log.Error(3, "Unable to update check instance for checkId=%d, %s", check.Id, err)
 			existing.Stop()

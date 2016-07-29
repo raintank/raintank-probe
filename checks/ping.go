@@ -48,8 +48,8 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	if r.Loss != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.ping.loss", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.ping.loss",
+			Name:     fmt.Sprintf("worldping.%s.%s.ping.loss", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.ping.loss",
 			Interval: int(check.Frequency),
 			Unit:     "percent",
 			Mtype:    "gauge",
@@ -65,8 +65,8 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	if r.Min != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.ping.min", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.ping.min",
+			Name:     fmt.Sprintf("worldping.%s.%s.ping.min", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.ping.min",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -82,8 +82,8 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	if r.Max != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.ping.max", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.ping.max",
+			Name:     fmt.Sprintf("worldping.%s.%s.ping.max", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.ping.max",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -99,8 +99,8 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	if r.Median != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.ping.median", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.ping.median",
+			Name:     fmt.Sprintf("worldping.%s.%s.ping.median", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.ping.median",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -116,8 +116,8 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	if r.Mdev != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.ping.mdev", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.ping.mdev",
+			Name:     fmt.Sprintf("worldping.%s.%s.ping.mdev", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.ping.mdev",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -133,8 +133,8 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 	if r.Avg != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.ping.mean", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.ping.mean",
+			Name:     fmt.Sprintf("worldping.%s.%s.ping.mean", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.ping.mean",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -148,8 +148,8 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		})
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.ping.default", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.ping.default",
+			Name:     fmt.Sprintf("worldping.%s.%s.ping.default", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.ping.default",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",

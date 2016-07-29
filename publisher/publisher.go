@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	Publisher            *Tsdb
-	maxMetricsPerPayload = 50000
+	Publisher          *Tsdb
+	maxMetricsPerFlush = 10000
 )
 
 type tsdbData struct {
@@ -35,9 +35,9 @@ type Tsdb struct {
 	Url          *url.URL
 	ApiKey       string
 	Metrics      []*schema.MetricData
-	Events       chan *schema.ProbeEvent
-	triggerFlush chan struct{}
-	LastFlush    time.Time
+	Events       []*schema.ProbeEvent
+	flushEvents  chan struct{}
+	flushMetrics chan struct{}
 	closeChan    chan struct{}
 	dataChan     chan tsdbData
 }
@@ -45,39 +45,46 @@ type Tsdb struct {
 func NewTsdb(u *url.URL, apiKey string, concurrency int) *Tsdb {
 	t := &Tsdb{
 		Metrics:      make([]*schema.MetricData, 0),
-		triggerFlush: make(chan struct{}),
-		Events:       make(chan *schema.ProbeEvent, 1000),
+		flushMetrics: make(chan struct{}),
+		flushEvents:  make(chan struct{}),
+		Events:       make([]*schema.ProbeEvent, 0),
 		Url:          u,
 		ApiKey:       apiKey,
 		Concurrency:  concurrency,
-		dataChan:     make(chan tsdbData, 1000),
+		dataChan:     make(chan tsdbData, concurrency),
 	}
 	go t.Run()
 	return t
 }
 
 func (t *Tsdb) Add(metrics []*schema.MetricData) {
+	log.Debug("received %d new metrics", len(metrics))
 	t.Lock()
 	t.Metrics = append(t.Metrics, metrics...)
-	if len(t.Metrics) > maxMetricsPerPayload {
-		ticker := time.NewTicker(time.Second)
-		pre := time.Now()
-	FLUSHLOOP:
-		for {
-			select {
-			case <-ticker.C:
-				wait := time.Since(pre)
-				log.Warn("unable to flush metrics fast enough. waited %f seconds", wait.Seconds())
-			case t.triggerFlush <- struct{}{}:
-				ticker.Stop()
-				break FLUSHLOOP
-			}
+	numMetrics := len(t.Metrics)
+	t.Unlock()
+	if numMetrics > maxMetricsPerFlush {
+		//non-blocking send on the channel. If there is already
+		// an item in the channel we dont need to add another.
+		select {
+		default:
+			log.Debug("flushMetrics channel blocked.")
+		case t.flushMetrics <- struct{}{}:
 		}
 	}
-	t.Unlock()
 }
+
 func (t *Tsdb) AddEvent(event *schema.ProbeEvent) {
-	t.Events <- event
+	t.Lock()
+	t.Events = append(t.Events, event)
+	t.Unlock()
+	//non-blocking send on the channel. If there is already
+	// an item in the channel we dont need to add another.
+	select {
+	default:
+		log.Debug("flushEvents channel blocked.")
+	case t.flushEvents <- struct{}{}:
+	}
 }
 
 func (t *Tsdb) Flush() {
@@ -86,35 +93,70 @@ func (t *Tsdb) Flush() {
 		t.Unlock()
 		return
 	}
-	t.LastFlush = time.Now()
 	metrics := make([]*schema.MetricData, len(t.Metrics))
 	copy(metrics, t.Metrics)
 	t.Metrics = t.Metrics[:0]
 	t.Unlock()
+
 	// Write the metrics to our HTTP server.
-	log.Debug("writing metrics to API", "count", len(metrics))
-	id := t.LastFlush.UnixNano()
-	body, err := msg.CreateMsg(metrics, id, msg.FormatMetricDataArrayMsgp)
-	if err != nil {
-		log.Error(3, "unable to convert metrics to MetricDataArrayMsgp.", "error", err)
+	log.Debug("writing %d metrics to API", len(metrics))
+	batches := schema.Reslice(metrics, maxMetricsPerFlush*2)
+	for _, batch := range batches {
+		id := time.Now().UnixNano()
+		body, err := msg.CreateMsg(batch, id, msg.FormatMetricDataArrayMsgp)
+		if err != nil {
+			log.Error(3, "unable to convert metrics to MetricDataArrayMsgp.", "error", err)
+			return
+		}
+		t.dataChan <- tsdbData{Path: "metrics", Body: body}
+		log.Debug("%d metrics queud for delivery", len(batch))
+	}
+}
+
+func (t *Tsdb) SendEvents() {
+	t.Lock()
+	if len(t.Events) == 0 {
+		t.Unlock()
 		return
 	}
-	t.dataChan <- tsdbData{Path: "metrics", Body: body}
+	events := make([]*schema.ProbeEvent, len(t.Events))
+	copy(events, t.Events)
+	t.Events = t.Events[:0]
+	t.Unlock()
+	for _, event := range events {
+		id := time.Now().UnixNano()
+		body, err := msg.CreateProbeEventMsg(event, id, msg.FormatProbeEventMsgp)
+		if err != nil {
+			log.Error(3, "Unable to convert event to ProbeEventMsgp.", "error", err)
+			continue
+		}
+		t.dataChan <- tsdbData{Path: "events", Body: body}
+	}
 }
 
 func (t *Tsdb) Run() {
 	for i := 0; i < t.Concurrency; i++ {
 		go t.sendData()
 	}
+
 	ticker := time.NewTicker(time.Second)
+	last := time.Now()
 	for {
 		select {
 		case <-ticker.C:
+			if time.Since(last) >= time.Second {
+				log.Debug("no flushes in last 1second. Flushing now.")
+				last = time.Now()
+				t.Flush()
+				log.Debug("flush took %f seconds", time.Since(last).Seconds())
+			}
+		case <-t.flushMetrics:
+			log.Debug("flush trigger received.")
+			last = time.Now()
 			t.Flush()
-		case <-t.triggerFlush:
-			t.Flush()
-		case e := <-t.Events:
-			t.SendEvent(e)
+			log.Debug("flush took %f seconds", time.Since(last).Seconds())
+		case <-t.flushEvents:
+			t.SendEvents()
 		case <-t.closeChan:
 			close(t.dataChan)
 			return
@@ -122,7 +164,7 @@ func (t *Tsdb) Run() {
 	}
 }
 func (t *Tsdb) Close() {
-	t.triggerFlush <- struct{}{}
+	t.flushMetrics <- struct{}{}
 	t.closeChan <- struct{}{}
 }
 
@@ -141,13 +183,11 @@ func (t *Tsdb) sendData() {
 				last = time.Now()
 			}
 		case data := <-t.dataChan:
-
 			u := t.Url.String() + data.Path
 			body := new(bytes.Buffer)
 			snappyBody := snappy.NewWriter(body)
 			snappyBody.Write(data.Body)
 			snappyBody.Close()
-			bytesSent += body.Len()
 			req, err := http.NewRequest("POST", u, body)
 			if err != nil {
 				log.Error(3, "failed to create request payload. ", err)
@@ -155,20 +195,19 @@ func (t *Tsdb) sendData() {
 			}
 			req.Header.Set("Content-Type", "rt-metric-binary-snappy")
 			req.Header.Set("Authorization", "Bearer "+t.ApiKey)
-
+			var reqBytesSent int
 			sent := false
 			for !sent {
+				reqBytesSent = body.Len()
 				if err := send(req); err != nil {
 					log.Error(3, err.Error())
 					time.Sleep(time.Second)
-					body.Reset()
-					snappyBody := snappy.NewWriter(body)
-					snappyBody.Write(data.Body)
-					snappyBody.Close()
 				} else {
 					sent = true
+					log.Debug("sent %d bytes", reqBytesSent)
 				}
 			}
+			bytesSent += reqBytesSent
 			counter++
 		}
 	}
@@ -185,14 +224,4 @@ func send(req *http.Request) error {
 		return fmt.Errorf("Posting data failed. %d - %s", resp.StatusCode, string(respBody))
 	}
 	return nil
-}
-
-func (t *Tsdb) SendEvent(event *schema.ProbeEvent) {
-	id := time.Now().UnixNano()
-	body, err := msg.CreateProbeEventMsg(event, id, msg.FormatProbeEventMsgp)
-	if err != nil {
-		log.Error(3, "Unable to convert event to ProbeEventMsgp.", "error", err)
-		return
-	}
-	t.dataChan <- tsdbData{Path: "events", Body: body}
 }
