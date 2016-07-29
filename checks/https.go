@@ -48,8 +48,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 	if r.DNS != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.dns", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.dns",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.dns", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.dns",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -65,8 +65,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 	if r.Connect != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.connect", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.connect",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.connect", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.connect",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -82,8 +82,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 	if r.Send != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.send", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.send",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.send", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.send",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -99,8 +99,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 	if r.Wait != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.wait", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.wait",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.wait", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.wait",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -116,8 +116,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 	if r.Recv != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.recv", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.recv",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.recv", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.recv",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -133,8 +133,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 	if r.Total != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.total", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.total",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.total", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.total",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -148,8 +148,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		})
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.default", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.default",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.default", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.default",
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -165,8 +165,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 	if r.Throughput != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.throughput", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.throughput",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.throughput", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.throughput",
 			Interval: int(check.Frequency),
 			Unit:     "B/s",
 			Mtype:    "rate",
@@ -182,8 +182,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 	if r.DataLength != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.dataLength", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.dataLength",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.dataLength", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.dataLength",
 			Interval: int(check.Frequency),
 			Unit:     "B",
 			Mtype:    "gauge",
@@ -199,8 +199,8 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 	if r.StatusCode != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
-			Name:     fmt.Sprintf("litmus.%s.%s.https.statusCode", check.Slug, probe.Self.Slug),
-			Metric:   "litmus.https.statusCode",
+			Name:     fmt.Sprintf("worldping.%s.%s.https.statusCode", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.statusCode",
 			Interval: int(check.Frequency),
 			Unit:     "",
 			Mtype:    "gauge",
