@@ -170,8 +170,8 @@ func (c *CheckInstance) run(t time.Time) {
 	}
 	metrics = append(metrics, &schema.MetricData{
 		OrgId:    int(c.Check.OrgId),
-		Name:     fmt.Sprintf("litmus.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:   fmt.Sprintf("litmus.%s.ok_state", c.Check.Type),
+		Name:     fmt.Sprintf("worldping.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
+		Metric:   fmt.Sprintf("worldping.%s.ok_state", c.Check.Type),
 		Interval: int(c.Check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
@@ -184,8 +184,8 @@ func (c *CheckInstance) run(t time.Time) {
 		Value: okState,
 	}, &schema.MetricData{
 		OrgId:    int(c.Check.OrgId),
-		Name:     fmt.Sprintf("litmus.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:   fmt.Sprintf("litmus.%s.error_state", c.Check.Type),
+		Name:     fmt.Sprintf("worldping.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
+		Metric:   fmt.Sprintf("worldping.%s.error_state", c.Check.Type),
 		Interval: int(c.Check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
