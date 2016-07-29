@@ -83,10 +83,12 @@ func (s *Scheduler) CheckHealth() {
 				log.Warn("This probe is now healthy again. Resuming execution of checks.")
 				s.Healthy = true
 				for _, instance := range s.Checks {
-					instance.Run()
+					log.Debug("starting %s check for %s", instance.Check.Type, instance.Check.Slug)
+					go instance.Run()
 				}
 				s.Unlock()
 			}
+			lastState = newState
 		}
 
 	}
