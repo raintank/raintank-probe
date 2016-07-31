@@ -202,6 +202,10 @@ func (t *Tsdb) sendData() {
 				if err := send(req); err != nil {
 					log.Error(3, err.Error())
 					time.Sleep(time.Second)
+					body.Reset()
+					snappyBody := snappy.NewWriter(body)
+					snappyBody.Write(data.Body)
+					snappyBody.Close()
 				} else {
 					sent = true
 					log.Debug("sent %d bytes", reqBytesSent)
