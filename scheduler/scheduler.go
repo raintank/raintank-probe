@@ -191,7 +191,7 @@ func (c *CheckInstance) run(t time.Time) {
 		Mtype:    "gauge",
 		Time:     t.Unix(),
 		Tags: []string{
-			mt.Sprintf("endpoint:%s", c.Check.Slug),
+			fmt.Sprintf("endpoint:%s", c.Check.Slug),
 			fmt.Sprintf("monitor_type:%s", c.Check.Type),
 			fmt.Sprintf("probe:%s", probe.Self.Slug),
 		},
