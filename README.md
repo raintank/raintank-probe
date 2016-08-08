@@ -61,9 +61,9 @@ public-checks = /etc/raintank/publicChecks.json
 
   c.) Use the Docker image.
   * launch the container with the below command, inserting the probe name from step1 and the apiKey from step2
-  
+
   ```
-  docker run -e RTPROBE_api-key=<Your Grafana.net ApiKey> -e RTPROBE_name=<PROBE name> raintank/raintank-probe 
+  docker run -e RTPROBE_API_KEY=<Your Grafana.net ApiKey> -e RTPROBE_NAME=<PROBE name> raintank/raintank-probe 
   ```
 
   d.) Manual build of Raintank probe (Great for those wishing to test and contribute)
