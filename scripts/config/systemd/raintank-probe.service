@@ -1,0 +1,12 @@
+[Unit]
+Description=Raintank probe monitoring agent
+ 
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/bin/raintank-probe "-config=/etc/raintank/probe.ini"
+Restart=always
+
+[Install]
+WantedBy=network-online.target
