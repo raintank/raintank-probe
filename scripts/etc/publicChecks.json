@@ -1,0 +1,77 @@
+[
+  {  
+    "id": -1,
+    "orgId":-1,
+    "endpointId":0,
+    "endpointSlug":"~google_com_demo",
+    "type":"http",
+    "state":-1,
+    "settings": { 
+      "host": "www.google.com",
+      "port":  80,
+      "path": "/",
+      "method":"GET",
+      "expectRegex":"",
+      "headers":"Accept-Encoding: gzip\nUser-Agent: raintank collector\n"
+    },
+    "frequency":60,
+    "enabled":true,
+    "offset":1,
+    "updated":"2016-01-27T18:11:47Z"
+  },
+  {  
+    "id":-2,
+    "orgId":-1,
+    "endpointId":0,
+    "endpointSlug":"~google_com_demo",
+    "type":"https",
+    "state":-1,
+    "settings":{
+      "host": "www.google.com",
+      "port":  443,
+      "path": "/",
+      "method":"GET",
+      "expectRegex":"",
+      "headers":"Accept-Encoding: gzip\nUser-Agent: raintank collector\n",
+      "validateCert": true
+    },
+    "frequency":60,
+    "enabled":true,
+    "offset":1,
+    "updated":"2016-01-27T18:11:47Z"
+  },
+  {  
+    "id":-3,
+    "orgId":-1,
+    "endpointId":0,
+    "endpointSlug":"~google_com_demo",
+    "type":"ping",
+    "state":-1,
+    "settings":{
+      "hostname":"google.com"
+    },
+    "frequency":10,
+    "enabled":true,
+    "offset":1,
+    "updated":"2016-01-27T18:11:47Z"
+  },
+  {  
+    "id":-4,
+    "orgId":-1,
+    "endpointId":0,
+    "endpointSlug":"~google_com_demo",
+    "type":"dns",
+    "state":-1,
+    "settings":{
+      "name":"google.com",
+      "type":"A",
+      "server":"ns3.google.com,ns1.google.com,ns4.google.com,ns2.google.com",
+      "port":53,
+      "protocol":"udp"
+    },
+    "frequency":60,
+    "enabled":true,
+    "offset":1,
+    "updated":"2016-01-27T18:11:47Z"
+  }
+]
