@@ -38,7 +38,7 @@ var (
 	apiKey           = flag.String("api-key", "not_very_secret_key", "Api Key")
 	concurrency      = flag.Int("concurrency", 5, "concurrency number of requests to TSDB.")
 	publicChecksFile = flag.String("public-checks", "/etc/raintank/publicChecks.json", "path to publicChecks json file.")
-	healthHosts      = flag.String("health-hosts", "google.com,youtube.com,facebook.com,yahoo.com,wikipedia.com", "comma separted list of hosts to ping to determin network health of this probe.")
+	healthHosts      = flag.String("health-hosts", "google.com,youtube.com,facebook.com,twitter.com,wikipedia.com", "comma separted list of hosts to ping to determin network health of this probe.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
 
