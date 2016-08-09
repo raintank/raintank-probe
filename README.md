@@ -29,7 +29,6 @@ name = <PROBE Name>
 server-url = wss://worldping-api.raintank.io/
 tsdb-url = https://tsdb-gw.raintank.io/
 api-key = <Your Grafana.net ApiKey>
-public-checks = /etc/raintank/publicChecks.json
 ```
   * start the collector
   ```
@@ -52,7 +51,6 @@ name = <PROBE Name>
 server-url = wss://worldping-api.raintank.io/
 tsdb-url = https://tsdb-gw.raintank.io/
 api-key = <Your Grafana.net ApiKey>
-public-checks = /etc/raintank/publicChecks.json
 ```
   * start the collector
   ```
