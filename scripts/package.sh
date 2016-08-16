@@ -24,7 +24,7 @@ cp ${BUILD_ROOT}/raintank-probe ${BUILD}/usr/bin/
 
 fpm -s dir -t deb \
   -v ${VERSION} -n raintank-probe -a ${ARCH} --description "Raintank probe monitoring agent" \
-  --deb-upstart ${BASE}/config/upstart/raintank-probe.conf \
+  --deb-upstart ${BASE}/config/upstart/raintank-probe \
   -m "Raintank Inc. <hello@raintank.io>" --vendor "raintank.io" \
   --license "Apache2.0" -C ${BUILD} -p ${PACKAGE_NAME} .
 
