@@ -208,7 +208,7 @@ func NewRaintankDnsProbe(settings map[string]interface{}) (*RaintankProbeDns, er
 
 // run the check. this is executed in a goroutine.
 func (p *RaintankProbeDns) Run() (CheckResult, error) {
-	deadline := time.Now().Add(time.Second * time.Duration(p.Timeout))
+	deadline := time.Now().Add(p.Timeout)
 	result := &DnsResult{}
 	// fix failed to respond with upper case
 	c := dns.Client{Net: p.Protocol}
