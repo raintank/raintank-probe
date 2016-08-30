@@ -326,7 +326,7 @@ func NewRaintankHTTPProbe(settings map[string]interface{}) (*RaintankProbeHTTP, 
 
 // Run checking
 func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
-	deadline := time.Now().Add(time.Second * time.Duration(p.Timeout))
+	deadline := time.Now().Add(p.Timeout)
 	result := &HTTPResult{}
 
 	// reader
@@ -396,6 +396,7 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 		result.Error = &msg
 		return result, nil
 	}
+
 	conn.SetDeadline(deadline)
 	defer conn.Close()
 	connecting := time.Since(start).Seconds() * 1000
@@ -422,43 +423,38 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 	send := time.Since(step).Seconds() * 1000
 	result.Send = &send
 
-	// Wait
+	// Wait.
+	// ReadResponse will block until the headers are received,
+	// it will then return our response struct without wiating for the entire
+	// response to be read from the connection.
 	step = time.Now()
-
-	// read first byte data
-	firstData := make([]byte, 1)
-	_, err = conn.Read(firstData)
+	response, err := http.ReadResponse(bufio.NewReader(conn), request)
 	if err != nil {
-		if err != io.EOF {
-			opError, ok := err.(*net.OpError)
-			if ok {
-				if opError.Timeout() {
-					msg := "timeout while waiting for response."
-					result.Error = &msg
-					return result, nil
-				}
-				msg := fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+		opError, ok := err.(*net.OpError)
+		if ok {
+			if opError.Timeout() {
+				msg := "timeout while waiting for response."
 				result.Error = &msg
 				return result, nil
 			}
-			msg := err.Error()
+			msg := fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
 			result.Error = &msg
 			return result, nil
 		}
+		msg := err.Error()
+		result.Error = &msg
+		return result, nil
 	}
 	wait := time.Since(step).Seconds() * 1000
 	result.Wait = &wait
 
-	// Receive
 	step = time.Now()
-	var buf bytes.Buffer
-	buf.Write(firstData)
-
+	var body bytes.Buffer
+	data := make([]byte, 1024)
 	limit := 100 * 1024
 	for {
-		data := make([]byte, 1024)
-		n, err := conn.Read(data)
-		buf.Write(data[:n])
+		n, err := response.Body.Read(data)
+		body.Write(data[:n])
 		if err != nil {
 			if err != io.EOF {
 				opError, ok := err.(*net.OpError)
@@ -480,12 +476,11 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 			}
 		}
 
-		if buf.Len() > limit {
+		if body.Len() > limit {
 			conn.Close()
 			break
 		}
 	}
-
 	recv := time.Since(step).Seconds() * 1000
 	/*
 		Total time
@@ -496,44 +491,18 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 	result.Recv = &recv
 
 	// Data Length
-	dataLength := float64(buf.Len())
+	var headers bytes.Buffer
+	response.Header.Write(&headers)
+	dataLength := float64(body.Len() + headers.Len())
 	result.DataLength = &dataLength
 
 	//throughput
-	if recv > 0 && dataLength > 0 {
+	if recv > 0 {
 		throughput := dataLength / (recv / 1000.0)
 		result.Throughput = &throughput
 	}
 
-	response, err := http.ReadResponse(bufio.NewReader(&buf), request)
-
 	if err != nil {
-		msg := err.Error()
-		result.Error = &msg
-		return result, nil
-	}
-
-	var reader io.ReadCloser
-	if p.ExpectRegex != "" {
-		// Handle gzip
-		switch response.Header.Get("Content-Encoding") {
-		case "gzip":
-			reader, err = gzip.NewReader(response.Body)
-			if err != nil {
-				msg := err.Error()
-				result.Error = &msg
-				return result, nil
-			}
-		default:
-			reader = response.Body
-		}
-	} else {
-		reader = response.Body
-	}
-
-	body, err := ioutil.ReadAll(reader)
-	reader.Close()
-	if err != nil && len(body) == 0 {
 		msg := err.Error()
 		result.Error = &msg
 		return result, nil
@@ -557,7 +526,28 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 			return result, nil
 		}
 
-		if !rgx.MatchString(string(body)) {
+		// Handle gzip
+		var decodedBody string
+		switch response.Header.Get("Content-Encoding") {
+		case "gzip":
+			reader, err := gzip.NewReader(&body)
+			if err != nil {
+				msg := err.Error()
+				result.Error = &msg
+				return result, nil
+			}
+			decodedBodyBytes, err := ioutil.ReadAll(reader)
+			if err != nil && len(decodedBodyBytes) == 0 {
+				msg := err.Error()
+				result.Error = &msg
+				return result, nil
+			}
+			decodedBody = string(decodedBodyBytes)
+		default:
+			decodedBody = body.String()
+		}
+
+		if !rgx.MatchString(decodedBody) {
 			msg := "expectRegex did not match"
 			result.Error = &msg
 			return result, nil
