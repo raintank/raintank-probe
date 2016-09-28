@@ -45,6 +45,21 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 			},
 			Value: *r.Time,
 		})
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("worldping.%s.%s.dns.default", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.dns.default",
+			Interval: int(check.Frequency),
+			Unit:     "ms",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint:%s", check.Slug),
+				fmt.Sprintf("monitor_type:%s", check.Type),
+				fmt.Sprintf("probe:%s", probe.Self.Slug),
+			},
+			Value: *r.Time,
+		})
 	}
 	if r.Ttl != nil {
 		metrics = append(metrics, &schema.MetricData{
