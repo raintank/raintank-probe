@@ -531,7 +531,7 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 
 	//throughput
 	if recv > 0 {
-		throughput := body.len() / (recv / 1000.0)
+		throughput := float64(body.Len()) / (recv / 1000.0)
 		result.Throughput = &throughput
 	}
 
