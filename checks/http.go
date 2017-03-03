@@ -392,13 +392,17 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 		for key := range dummyRequest.Header {
 			request.Header.Set(key, dummyRequest.Header.Get(key))
 		}
+
+		if dummyRequest.Host != "" {
+			request.Host = dummyRequest.Host
+		}
 	}
 
 	if _, found := request.Header["Accept-Encoding"]; !found {
 		request.Header.Set("Accept-Encoding", "gzip")
 	}
 
-	//always close the conneciton
+	// always close the connection
 	request.Header.Set("Connection", "close")
 
 	// DNS lookup
@@ -415,7 +419,7 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 
 	// Dialing
 	start := time.Now()
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", addrs[0], p.Port), p.Timeout)
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(addrs[0], strconv.FormatInt(p.Port, 10)), p.Timeout)
 	if err != nil {
 		opError, ok := err.(*net.OpError)
 		if ok {
