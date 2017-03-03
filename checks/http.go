@@ -21,16 +21,16 @@ import (
 
 // HTTPResult struct
 type HTTPResult struct {
-	DNS        *float64
-	Connect    *float64
-	Send       *float64
-	Wait       *float64
-	Recv       *float64
-	Total      *float64
-	DataLength *float64
-	Throughput *float64
-	StatusCode *float64
-	Error      *string
+	DNS        *float64 `json:"dns"`
+	Connect    *float64 `json:"connect"`
+	Send       *float64 `json:"send"`
+	Wait       *float64 `json:"wait"`
+	Recv       *float64 `json:"recv"`
+	Total      *float64 `json:"total"`
+	DataLength *float64 `json:"dataLength"`
+	Throughput *float64 `json:"throughput"`
+	StatusCode *float64 `json:"statusCode"`
+	Error      *string  `json:"error"`
 }
 
 func (r *HTTPResult) ErrorMsg() string {
@@ -215,14 +215,15 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 
 // RaintankProbeHTTP struct.
 type RaintankProbeHTTP struct {
-	Host        string
-	Path        string
-	Port        int64
-	Method      string
-	Headers     string
-	ExpectRegex string
-	Body        string
-	Timeout     time.Duration
+	Host          string        `json:"host"`
+	Path          string        `json:"path"`
+	Port          int64         `json:"port"`
+	Method        string        `json:"method"`
+	Headers       string        `json:"headers"`
+	ExpectRegex   string        `json:"expectRegex"`
+	Body          string        `json:"body"`
+	Timeout       time.Duration `json:"timeout"`
+	DownloadLimit int64         `json:"downloadLimit"`
 }
 
 // NewRaintankHTTPProbe json check
@@ -247,6 +248,9 @@ func NewRaintankHTTPProbe(settings map[string]interface{}) (*RaintankProbeHTTP, 
 	p.Path, ok = path.(string)
 	if !ok {
 		return nil, fmt.Errorf("invalid value for path, must be string.")
+	}
+	if p.Path == "" {
+		p.Path = "/"
 	}
 
 	method, ok := settings["method"]
@@ -321,6 +325,37 @@ func NewRaintankHTTPProbe(settings map[string]interface{}) (*RaintankProbeHTTP, 
 		return nil, fmt.Errorf("invalid port number.")
 	}
 
+	limit, ok := settings["downloadLimit"]
+	if !ok {
+		p.DownloadLimit = 100 * 1024
+	} else {
+		switch limit.(type) {
+		case float64:
+			p.DownloadLimit = int64(limit.(float64))
+		case int64:
+			p.DownloadLimit = limit.(int64)
+		case string:
+			re, err := regexp.Compile(`^(?i:(\d+)([km]?)b?)$`)
+			if err != nil {
+				return nil, fmt.Errorf("error compiling download limit regexp")
+			}
+
+			matched := re.FindStringSubmatch(limit.(string))
+			if matched == nil {
+				return nil, fmt.Errorf("invalid value for downloadLimit, must be number or size string.")
+			}
+
+			p.DownloadLimit, err = strconv.ParseInt(matched[1], 10, 64)
+			if strings.ToLower(matched[2]) == "m" {
+				p.DownloadLimit = p.DownloadLimit * 1024 * 1024
+			} else if strings.ToLower(matched[2]) == "k" {
+				p.DownloadLimit = p.DownloadLimit * 1024
+			}
+		default:
+			return nil, fmt.Errorf("invalid value for downloadLimit, must be number or size string.")
+		}
+	}
+
 	return &p, nil
 }
 
@@ -357,13 +392,17 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 		for key := range dummyRequest.Header {
 			request.Header.Set(key, dummyRequest.Header.Get(key))
 		}
+
+		if dummyRequest.Host != "" {
+			request.Host = dummyRequest.Host
+		}
 	}
 
 	if _, found := request.Header["Accept-Encoding"]; !found {
 		request.Header.Set("Accept-Encoding", "gzip")
 	}
 
-	//always close the conneciton
+	// always close the connection
 	request.Header.Set("Connection", "close")
 
 	// DNS lookup
@@ -374,12 +413,13 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 		result.Error = &msg
 		return result, nil
 	}
+
 	dnsResolve := time.Since(step).Seconds() * 1000
 	result.DNS = &dnsResolve
 
 	// Dialing
 	start := time.Now()
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", addrs[0], p.Port), p.Timeout)
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(addrs[0], strconv.FormatInt(p.Port, 10)), p.Timeout)
 	if err != nil {
 		opError, ok := err.(*net.OpError)
 		if ok {
@@ -396,8 +436,8 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 		result.Error = &msg
 		return result, nil
 	}
-
 	conn.SetDeadline(deadline)
+
 	defer conn.Close()
 	connecting := time.Since(start).Seconds() * 1000
 	result.Connect = &connecting
@@ -451,7 +491,6 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 	step = time.Now()
 	var body bytes.Buffer
 	data := make([]byte, 1024)
-	limit := 100 * 1024
 	for {
 		n, err := response.Body.Read(data)
 		body.Write(data[:n])
@@ -476,11 +515,12 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 			}
 		}
 
-		if body.Len() > limit {
+		if int64(body.Len()) > p.DownloadLimit {
 			conn.Close()
 			break
 		}
 	}
+
 	recv := time.Since(step).Seconds() * 1000
 	/*
 		Total time
