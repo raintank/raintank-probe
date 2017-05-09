@@ -109,7 +109,7 @@ func (t *Tsdb) Flush() {
 			return
 		}
 		t.dataChan <- tsdbData{Path: "metrics", Body: body}
-		log.Debug("%d metrics queud for delivery", len(batch))
+		log.Debug("%d metrics queued for delivery", len(batch))
 	}
 }
 
