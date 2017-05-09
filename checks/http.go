@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/raintank/raintank-probe/probe"
+	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
 	"gopkg.in/raintank/schema.v1"
 )
@@ -568,7 +569,8 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 
 		// Handle gzip
 		var decodedBody string
-		switch response.Header.Get("Content-Encoding") {
+
+		switch strings.ToLower(response.Header.Get("Content-Encoding")) {
 		case "gzip":
 			reader, err := gzip.NewReader(&body)
 			if err != nil {
@@ -583,11 +585,17 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 				return result, nil
 			}
 			decodedBody = string(decodedBodyBytes)
-		default:
+		case "", "identity":
 			decodedBody = body.String()
+		default:
+			msg := "unrecognized Content-Encoding: " + response.Header.Get("Content-Encoding")
+			result.Error = &msg
+			return result, nil
 		}
 
 		if !rgx.MatchString(decodedBody) {
+			log.Debug("expectRegex %s did not match returned body %s", p.ExpectRegex, decodedBody)
+
 			msg := "expectRegex did not match"
 			result.Error = &msg
 			return result, nil

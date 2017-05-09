@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"regexp"
@@ -17,6 +16,7 @@ import (
 	"time"
 
 	"github.com/raintank/raintank-probe/probe"
+	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
 	"gopkg.in/raintank/schema.v1"
 )
@@ -587,7 +587,7 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 	}
 
 	if certs == nil || len(certs) < 1 {
-		log.Printf("no PeerCertificates for connection to %s", p.Host)
+		log.Debug("no PeerCertificates for connection to %s", p.Host)
 	} else {
 		timeTilExpiry := certs[0].NotAfter.Sub(time.Now())
 		secondsTilExpiry := float64(timeTilExpiry) / float64(time.Second)
@@ -605,7 +605,8 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 
 		// Handle gzip
 		var decodedBody string
-		switch response.Header.Get("Content-Encoding") {
+
+		switch strings.ToLower(response.Header.Get("Content-Encoding")) {
 		case "gzip":
 			reader, err := gzip.NewReader(&body)
 			if err != nil {
@@ -620,11 +621,17 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 				return result, nil
 			}
 			decodedBody = string(decodedBodyBytes)
-		default:
+		case "", "identity":
 			decodedBody = body.String()
+		default:
+			msg := "unrecognized Content-Encoding: " + response.Header.Get("Content-Encoding")
+			result.Error = &msg
+			return result, nil
 		}
 
 		if !rgx.MatchString(decodedBody) {
+			log.Debug("expectRegex %s did not match returned body %s", p.ExpectRegex, decodedBody)
+
 			msg := "expectRegex did not match"
 			result.Error = &msg
 			return result, nil

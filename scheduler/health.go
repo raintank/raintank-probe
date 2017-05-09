@@ -39,6 +39,7 @@ func (s *Scheduler) CheckHealth() {
 				defer wg.Done()
 				results, err := chk.Run()
 				if err != nil {
+					log.Warn("Health check to %s failed. %s", chk.Hostname, err)
 					ch <- 3
 					return
 				}
@@ -47,6 +48,7 @@ func (s *Scheduler) CheckHealth() {
 					ch <- 1
 					return
 				}
+				log.Trace("Health check completed for %s", chk.Hostname)
 				ch <- 0
 			}(resultsCh, check)
 		}

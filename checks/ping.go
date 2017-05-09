@@ -9,7 +9,6 @@ import (
 
 	"github.com/raintank/go-pinger"
 	"github.com/raintank/raintank-probe/probe"
-	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
 	"gopkg.in/raintank/schema.v1"
 )
@@ -278,8 +277,6 @@ func (p *RaintankProbePing) Run() (CheckResult, error) {
 		errorMsg := "100% packet loss"
 		result.Error = &errorMsg
 	}
-
-	log.Debug("Ping check completed.")
 
 	return result, nil
 }
