@@ -3,7 +3,6 @@ package checks
 import (
 	"fmt"
 	"math"
-	"net"
 	"sort"
 	"time"
 
@@ -167,8 +166,9 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 
 // Our check definition.
 type RaintankProbePing struct {
-	Hostname string        `json:"hostname"`
-	Timeout  time.Duration `json:"timeout"`
+	Hostname  string        `json:"hostname"`
+	Timeout   time.Duration `json:"timeout"`
+	IPVersion string        `json:"ipversion"`
 }
 
 // parse the json request body to build our check definition.
@@ -201,6 +201,19 @@ func NewRaintankPingProbe(settings map[string]interface{}) (*RaintankProbePing, 
 	}
 	p.Timeout = time.Duration(time.Millisecond * time.Duration(int(1000.0*t)))
 
+	version, ok := settings["ipversion"]
+	if !ok {
+		p.IPVersion = "v4"
+	} else {
+		p.IPVersion, ok = version.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for ipversion, must be string.")
+		}
+	}
+	if !(p.IPVersion == "v4" || p.IPVersion == "v6" || p.IPVersion == "any") {
+		return nil, fmt.Errorf("ipversion must be v4, v6, or any.")
+	}
+
 	return &p, nil
 }
 
@@ -208,12 +221,10 @@ func (p *RaintankProbePing) Run() (CheckResult, error) {
 	deadline := time.Now().Add(p.Timeout)
 	result := &PingResult{}
 
-	var ipAddr string
-
 	// get IP from hostname.
-	addrs, err := net.LookupHost(p.Hostname)
-	if err != nil || len(addrs) < 1 {
-		msg := "failed to resolve hostname to IP."
+	ipAddr, err := ResolveHost(p.Hostname, p.IPVersion)
+	if err != nil {
+		msg := err.Error()
 		result.Error = &msg
 		return result, nil
 	}
@@ -222,7 +233,8 @@ func (p *RaintankProbePing) Run() (CheckResult, error) {
 		result.Error = &msg
 		return result, nil
 	}
-	ipAddr = addrs[0]
+
+	// fmt.Printf("pinging %#v\n", ipAddr)
 
 	resultsChan, err := GlobalPinger.Ping(ipAddr, count, deadline)
 	if err != nil {

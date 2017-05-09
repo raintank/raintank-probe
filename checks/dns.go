@@ -2,6 +2,8 @@ package checks
 
 import (
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -242,7 +244,7 @@ func (p *RaintankProbeDns) Run() (CheckResult, error) {
 		//trim any leading/training whitespace.
 		server := strings.Trim(s, " ")
 
-		srvPort := fmt.Sprintf("%s:%d", server, p.Port)
+		srvPort := net.JoinHostPort(server, strconv.FormatInt(p.Port, 10))
 		start := time.Now()
 		r, t, err := c.Exchange(&m, srvPort)
 		if err != nil || r == nil {

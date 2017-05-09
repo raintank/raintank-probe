@@ -225,6 +225,7 @@ type RaintankProbeHTTP struct {
 	Body          string        `json:"body"`
 	Timeout       time.Duration `json:"timeout"`
 	DownloadLimit int64         `json:"downloadLimit"`
+	IPVersion     string        `json:"ipversion"`
 }
 
 // NewRaintankHTTPProbe json check
@@ -357,6 +358,19 @@ func NewRaintankHTTPProbe(settings map[string]interface{}) (*RaintankProbeHTTP, 
 		}
 	}
 
+	version, ok := settings["ipversion"]
+	if !ok {
+		p.IPVersion = "v4"
+	} else {
+		p.IPVersion, ok = version.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for ipversion, must be string.")
+		}
+	}
+	if !(p.IPVersion == "v4" || p.IPVersion == "v6" || p.IPVersion == "any") {
+		return nil, fmt.Errorf("ipversion must be v4, v6, or any.")
+	}
+
 	return &p, nil
 }
 
@@ -366,17 +380,18 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 	result := &HTTPResult{}
 
 	// reader
-	tmpPort := ""
+	tmpHost := p.Host
 	if p.Port != 80 {
-		tmpPort = fmt.Sprintf(":%d", p.Port)
+		tmpHost = net.JoinHostPort(p.Host, strconv.FormatInt(p.Port, 10))
+	} else if strings.Contains(p.Host, ":") || strings.Contains(p.Host, "%") {
+		tmpHost = "[" + p.Host + "]"
 	}
-	url := fmt.Sprintf("http://%s%s%s", p.Host, tmpPort, p.Path)
+	url := fmt.Sprintf("http://%s%s", tmpHost, p.Path)
 	sendBody := bytes.NewReader([]byte(p.Body))
 	request, err := http.NewRequest(p.Method, url, sendBody)
 
 	if err != nil {
 		msg := fmt.Sprintf("Invalid request settings. %s", err.Error())
-
 		result.Error = &msg
 		return result, nil
 	}
@@ -410,10 +425,15 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 
 	// DNS lookup
 	step := time.Now()
-	addrs, err := net.LookupHost(p.Host)
-	if err != nil || len(addrs) < 1 {
-		msg := "failed to resolve hostname to IP."
 
+	ipAddr, err := ResolveHost(p.Host, p.IPVersion)
+	if err != nil {
+		msg := err.Error()
+		result.Error = &msg
+		return result, nil
+	}
+	if time.Now().After(deadline) {
+		msg := "timeout resolving IP address of hostname."
 		result.Error = &msg
 		return result, nil
 	}
@@ -421,9 +441,11 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 	dnsResolve := time.Since(step).Seconds() * 1000
 	result.DNS = &dnsResolve
 
+	// fmt.Printf("http connecting to %#v\n", ipAddr)
+
 	// Dialing
 	start := time.Now()
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(addrs[0], strconv.FormatInt(p.Port, 10)), p.Timeout)
+	conn, err := net.DialTimeout("tcp", net.JoinHostPort(ipAddr, strconv.FormatInt(p.Port, 10)), p.Timeout)
 	if err != nil {
 		msg := ""
 		opError, ok := err.(*net.OpError)
@@ -456,10 +478,10 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 			if opError.Timeout() {
 				msg = "timeout while sending request."
 			} else {
-				msg := fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+				msg = fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
 			}
 		} else {
-			msg := err.Error()
+			msg = err.Error()
 		}
 
 		result.Error = &msg
@@ -558,7 +580,6 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 	result.StatusCode = &statusCode
 	if statusCode >= 400 {
 		msg := "Invalid status code " + strconv.Itoa(response.StatusCode)
-
 		result.Error = &msg
 		return result, nil
 	}
@@ -598,7 +619,6 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 			decodedBody = body.String()
 		default:
 			msg := "unrecognized Content-Encoding: " + response.Header.Get("Content-Encoding")
-
 			result.Error = &msg
 			return result, nil
 		}
@@ -607,7 +627,6 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 			log.Debug("expectRegex %s did not match returned body %s", p.ExpectRegex, decodedBody)
 
 			msg := "expectRegex did not match"
-
 			result.Error = &msg
 			return result, nil
 		}
