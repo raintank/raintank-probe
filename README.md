@@ -38,7 +38,7 @@ api-key = <Your Grafana.net ApiKey>
   b.) Use RPM Package. Avalailable for Centos 6 and Centos 7 (and compatilble distrobutions.)
   * add PackageCloud to repo.
   ```
-  curl -s https://packagecloud.io/install/repositories/raintank/raintank/script.deb.sh | sudo bash
+  curl -s https://packagecloud.io/install/repositories/raintank/raintank/script.rpm.sh | sudo bash
   ```
   * Install raintank-probe package
   ```
