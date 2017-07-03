@@ -42,7 +42,7 @@ api-key = <Your Grafana.net ApiKey>
   ```
   * Install raintank-probe package
   ```
-  apt-get install raintank-probe
+  yum install raintank-probe
   ```
   * Edit the configuration file in /etc/raintank/probe.ini using the Probe name from step 1 and apiKey from step2
   ```
