@@ -213,6 +213,23 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 			Value: *r.StatusCode,
 		})
 	}
+	if r.Expiry != nil {
+		metrics = append(metrics, &schema.MetricData{
+			OrgId:    int(check.OrgId),
+			Name:     fmt.Sprintf("worldping.%s.%s.https.expiry", check.Slug, probe.Self.Slug),
+			Metric:   "worldping.https.expiry",
+			Interval: int(check.Frequency),
+			Unit:     "",
+			Mtype:    "gauge",
+			Time:     t.Unix(),
+			Tags: []string{
+				fmt.Sprintf("endpoint:%s", check.Slug),
+				fmt.Sprintf("monitor_type:%s", check.Type),
+				fmt.Sprintf("probe:%s", probe.Self.Slug),
+			},
+			Value: *r.Expiry,
+		})
+	}
 	return metrics
 }
 
