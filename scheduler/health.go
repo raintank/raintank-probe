@@ -17,7 +17,7 @@ func (s *Scheduler) CheckHealth() {
 	chks := make([]*checks.RaintankProbePing, len(s.HealthHosts))
 	for i, host := range s.HealthHosts {
 		settings := make(map[string]interface{})
-		settings["timeout"] = 1.0
+		settings["timeout"] = 2.0
 		settings["hostname"] = host
 		chk, err := checks.NewRaintankPingProbe(settings)
 		if err != nil {
@@ -28,7 +28,7 @@ func (s *Scheduler) CheckHealth() {
 
 	lastState := 1
 
-	ticker := time.NewTicker(time.Second * 2)
+	ticker := time.NewTicker(time.Second * 5)
 	var wg sync.WaitGroup
 	for range ticker.C {
 		resultsCh := make(chan int, len(chks))
