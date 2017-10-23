@@ -458,12 +458,12 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 
 	ipAddr, err := ResolveHost(p.Host, p.IPVersion)
 	if err != nil {
-		msg := err.Error()
+		msg := fmt.Sprintf("error resolving hostname. %s", err.Error())
 		result.Error = &msg
 		return result, nil
 	}
 	if time.Now().After(deadline) {
-		msg := "timeout resolving IP address of hostname."
+		msg := "error resolving hostname. timeout"
 		result.Error = &msg
 		return result, nil
 	}
@@ -486,12 +486,12 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 		opError, ok := err.(*net.OpError)
 		if ok {
 			if opError.Timeout() {
-				msg = "timeout while connecting to host."
+				msg = "error connecting. timeout"
 			} else {
-				msg = fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+				msg = fmt.Sprintf("error connecting. %s", err.Error())
 			}
 		} else {
-			msg = err.Error()
+			msg = fmt.Sprintf("error connecting. %s", err.Error())
 		}
 
 		result.Error = &msg
@@ -503,7 +503,7 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 	conn := tls.Client(tcpconn, tlsConfig)
 	err = conn.Handshake()
 	if err != nil {
-		msg := err.Error()
+		msg := fmt.Sprintf("tls handshake error. %s", err.Error())
 		result.Error = &msg
 		return result, nil
 	}
@@ -522,12 +522,12 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 		opError, ok := err.(*net.OpError)
 		if ok {
 			if opError.Timeout() {
-				msg = "timeout while sending request."
+				msg = "error sending request. timeout"
 			} else {
-				msg = fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+				msg = fmt.Sprintf("error sending request. %s", err.Error())
 			}
 		} else {
-			msg = err.Error()
+			msg = fmt.Sprintf("error sending request. %s", err.Error())
 		}
 
 		result.Error = &msg
@@ -547,12 +547,12 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 		opError, ok := err.(*net.OpError)
 		if ok {
 			if opError.Timeout() {
-				msg = "timeout while waiting for response."
+				msg = "error reading response. timeout"
 			} else {
-				msg = fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+				msg = fmt.Sprintf("error reading response. %s", err.Error())
 			}
 		} else {
-			msg = err.Error()
+			msg = fmt.Sprintf("error reading response. %s", err.Error())
 		}
 
 		result.Error = &msg
@@ -580,12 +580,12 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 			opError, ok := err.(*net.OpError)
 			if ok {
 				if opError.Timeout() {
-					msg = "timeout while receiving response."
+					msg = "error reading response. timeout"
 				} else {
-					msg = fmt.Sprintf("%s error. %s", opError.Op, opError.Err.Error())
+					msg = fmt.Sprintf("error reading response. %s", err.Error())
 				}
 			} else {
-				msg = err.Error()
+				msg = fmt.Sprintf("error reading response. %s", err.Error())
 			}
 
 			result.Error = &msg
@@ -642,7 +642,7 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 	if p.ExpectRegex != "" {
 		rgx, err := regexp.Compile(p.ExpectRegex)
 		if err != nil {
-			msg := err.Error()
+			msg := fmt.Sprintf("expectRegex error. %s", err.Error())
 
 			result.Error = &msg
 			return result, nil
@@ -655,7 +655,7 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 		case "gzip":
 			reader, err := gzip.NewReader(&body)
 			if err != nil {
-				msg := err.Error()
+				msg := fmt.Sprintf("error decoding content. %s", err.Error())
 
 				result.Error = &msg
 				return result, nil
@@ -663,7 +663,7 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 
 			decodedBodyBytes, err := ioutil.ReadAll(reader)
 			if err != nil && len(decodedBodyBytes) == 0 {
-				msg := err.Error()
+				msg := fmt.Sprintf("error decoding content. %s", err.Error())
 
 				result.Error = &msg
 				return result, nil
