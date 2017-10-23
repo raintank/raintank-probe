@@ -26,6 +26,7 @@ type CheckInstance struct {
 	LastRun     time.Time
 	StateChange time.Time
 	LastError   string
+	stopped     bool
 	sync.Mutex
 }
 
@@ -63,7 +64,9 @@ func (i *CheckInstance) Update(c *m.CheckWithSlug, probeHealthy bool) error {
 }
 
 func (i *CheckInstance) Stop() {
+	log.Debug("stopping execution of %s %s", i.Check.Slug, i.Check.Type)
 	i.Lock()
+	i.stopped = true
 	if i.Ticker != nil {
 		i.Ticker.Stop()
 	}
@@ -72,6 +75,7 @@ func (i *CheckInstance) Stop() {
 
 func (c *CheckInstance) Run() {
 	c.Lock()
+	c.stopped = false
 	log.Info("Starting execution loop for %s check for %s, Frequency: %d, Offset: %d", c.Check.Type, c.Check.Slug, c.Check.Frequency, c.Check.Offset)
 	now := time.Now().Unix()
 	waitTime := ((c.Check.Frequency + c.Check.Offset) - (now % c.Check.Frequency)) % c.Check.Frequency
@@ -79,8 +83,14 @@ func (c *CheckInstance) Run() {
 		waitTime = 0
 	}
 	log.Debug("executing %s check for %s in %d seconds", c.Check.Type, c.Check.Slug, waitTime)
+	c.Unlock()
 	if waitTime > 0 {
 		time.Sleep(time.Second * time.Duration(waitTime))
+	}
+	c.Lock()
+	if c.stopped {
+		c.Unlock()
+		return
 	}
 	c.Ticker = time.NewTicker(time.Duration(c.Check.Frequency) * time.Second)
 	c.Unlock()
@@ -98,9 +108,15 @@ func (c *CheckInstance) run(t time.Time) {
 			log.Warn("check is running late by %d milliseconds", delta/time.Millisecond)
 		}
 	}
+	stopped := false
 	c.Lock()
+	stopped = c.stopped
 	c.LastRun = t
 	c.Unlock()
+	if stopped {
+		log.Debug("aborting check as it has been stopped")
+		return
+	}
 	desc := fmt.Sprintf("%s check for %s", c.Check.Type, c.Check.Slug)
 	log.Debug("Running %s", desc)
 	results, err := c.Exec.Run()
