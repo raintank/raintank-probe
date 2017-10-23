@@ -243,12 +243,21 @@ func New(healthHosts string) *Scheduler {
 	}
 }
 
+func (s *Scheduler) IsHealthy() bool {
+	s.RLock()
+	healthy := s.Healthy
+	s.RUnlock()
+	return healthy
+}
+
 func (s *Scheduler) Close() {
+	log.Info("Scheduler shutting down")
 	s.Lock()
 	for _, instance := range s.Checks {
 		instance.Stop()
 	}
 	s.Checks = make(map[int64]*CheckInstance)
+	log.Info("scheduler Shutdown complete.")
 	return
 }
 

@@ -28,7 +28,7 @@ func (s *Scheduler) CheckHealth() {
 
 	lastState := 1
 
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(time.Second * 2)
 	var wg sync.WaitGroup
 	for range ticker.C {
 		resultsCh := make(chan int, len(chks))

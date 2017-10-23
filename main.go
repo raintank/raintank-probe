@@ -5,12 +5,15 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
 	"path"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/graarh/golang-socketio"
@@ -39,6 +42,9 @@ var (
 	concurrency      = flag.Int("concurrency", 5, "concurrency number of requests to TSDB.")
 	publicChecksFile = flag.String("public-checks", "/etc/raintank/publicChecks.json", "path to publicChecks json file.")
 	healthHosts      = flag.String("health-hosts", "google.com,youtube.com,facebook.com,twitter.com,wikipedia.com", "comma separted list of hosts to ping to determin network health of this probe.")
+
+	// healthz endpoint
+	healthzListenAddr = flag.String("healthz-listen-addr", "localhost:7180", "address to listen on for healthz http api.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
 
@@ -109,7 +115,7 @@ func main() {
 	go jobScheduler.CheckHealth()
 
 	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	controllerUrl, err := url.Parse(*serverAddr)
 	if err != nil {
@@ -138,9 +144,12 @@ func main() {
 	}
 	bindHandlers(client, controllerUrl, jobScheduler, interrupt)
 
+	healthz := NewHealthz(jobScheduler)
+	go healthz.Run()
 	//wait for interupt Signal.
 	<-interrupt
 	log.Info("interrupt")
+	healthz.Stop()
 	jobScheduler.Close()
 	client.Close()
 	return
@@ -195,4 +204,55 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 		log.Error(3, "Controller emitted an error. %s", reason)
 		close(interrupt)
 	})
+}
+
+type Healthz struct {
+	listener     net.Listener
+	jobScheduler *scheduler.Scheduler
+}
+
+// runs a HTTP server, accepting requests to /ready and /alive which reports the
+// readiness/liveness of the probe
+func NewHealthz(jobScheduler *scheduler.Scheduler) *Healthz {
+
+	// define our own listner so we can call Close on it
+	l, err := net.Listen("tcp", *healthzListenAddr)
+	if err != nil {
+		log.Fatal(4, err.Error())
+	}
+	return &Healthz{
+		listener:     l,
+		jobScheduler: jobScheduler,
+	}
+}
+
+func (h *Healthz) Run() {
+	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
+		healthy := h.jobScheduler.IsHealthy()
+		if healthy {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		} else {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			w.Write([]byte("Not Ready"))
+		}
+	})
+
+	http.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
+	srv := http.Server{
+		Addr: *healthzListenAddr,
+	}
+	err := srv.Serve(h.listener)
+	if err != nil {
+		log.Info(err.Error())
+	}
+}
+
+func (h *Healthz) Stop() {
+	h.listener.Close()
+	log.Info("healthz listener closed")
 }
