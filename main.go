@@ -152,6 +152,7 @@ func main() {
 	healthz.Stop()
 	jobScheduler.Close()
 	client.Close()
+	publisher.Stop()
 	return
 }
 
