@@ -3,6 +3,7 @@ package checks
 import (
 	"fmt"
 	"math"
+	"net"
 	"sort"
 	"time"
 
@@ -19,7 +20,12 @@ const count = 5
 var GlobalPinger *pinger.Pinger
 
 func init() {
-	GlobalPinger = pinger.NewPinger()
+	var err error
+	GlobalPinger, err = pinger.NewPinger("all", 10000)
+	if err != nil {
+		panic(err)
+	}
+	GlobalPinger.Start()
 }
 
 // results. we use pointers so that missing data will be
@@ -235,13 +241,10 @@ func (p *RaintankProbePing) Run() (CheckResult, error) {
 	}
 
 	// fmt.Printf("pinging %#v\n", ipAddr)
-
-	resultsChan, err := GlobalPinger.Ping(ipAddr, count, deadline)
+	results, err := GlobalPinger.Ping(net.ParseIP(ipAddr), count, p.Timeout)
 	if err != nil {
 		return nil, err
 	}
-
-	results := <-resultsChan
 
 	// derive stats from results.
 	successCount := results.Received
@@ -249,6 +252,11 @@ func (p *RaintankProbePing) Run() (CheckResult, error) {
 
 	measurements := make([]float64, len(results.Latency))
 	for i, m := range results.Latency {
+		if m > p.Timeout {
+			successCount--
+			failCount++
+			continue
+		}
 		measurements[i] = m.Seconds() * 1000
 	}
 

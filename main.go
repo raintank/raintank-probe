@@ -22,6 +22,7 @@ import (
 	m "github.com/raintank/worldping-api/pkg/models"
 	"github.com/rakyll/globalconf"
 
+	"github.com/raintank/raintank-probe/checks"
 	"github.com/raintank/raintank-probe/probe"
 	"github.com/raintank/raintank-probe/publisher"
 	"github.com/raintank/raintank-probe/scheduler"
@@ -153,6 +154,7 @@ func main() {
 	jobScheduler.Close()
 	client.Close()
 	publisher.Stop()
+	checks.GlobalPinger.Stop()
 	return
 }
 
