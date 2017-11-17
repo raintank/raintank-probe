@@ -2,8 +2,10 @@ package publisher
 
 import (
 	"bytes"
+	"crypto/tls"
 	"hash/fnv"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -61,9 +63,27 @@ func NewTsdb(u *url.URL, apiKey string, concurrency int) *Tsdb {
 	for i := 0; i < concurrency; i++ {
 		t.metricsWriteQueues[i] = make(chan []byte, 100)
 	}
+	// start off with a transport the same as Go's DefaultTransport
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+	// disable http 2.0 because there seems to be a compatibility problem between nginx hosts and the golang http2 implementation
+	// which would occasionally result in bogus `400 Bad Request` errors.
+	transport.TLSNextProto = make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)
+
 	t.client = &http.Client{
 		Timeout: time.Second * 10,
 	}
+	t.client.Transport = transport
 	go t.run()
 	return t
 }
@@ -171,6 +191,7 @@ func (t *Tsdb) flushMetrics(shard int) {
 		Jitter: true,
 	}
 	body := new(bytes.Buffer)
+	var bodyLen int
 	defer t.wg.Done()
 	for data := range q {
 		for {
@@ -178,6 +199,7 @@ func (t *Tsdb) flushMetrics(shard int) {
 			body.Reset()
 			snappyBody := snappy.NewWriter(body)
 			snappyBody.Write(data)
+			bodyLen = body.Len()
 			req, err := http.NewRequest("POST", t.tsdbUrl+"/metrics", body)
 			if err != nil {
 				panic(err)
@@ -188,7 +210,7 @@ func (t *Tsdb) flushMetrics(shard int) {
 			diff := time.Since(pre)
 			if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				b.Reset()
-				log.Debug("GrafanaNet sent metrics in %s -msg size %d", diff, body.Len())
+				log.Debug("GrafanaNet sent metrics in %s -msg size %d", diff, bodyLen)
 				resp.Body.Close()
 				ioutil.ReadAll(resp.Body)
 				break
@@ -217,6 +239,7 @@ func (t *Tsdb) flushEvents() {
 		Jitter: true,
 	}
 	body := new(bytes.Buffer)
+	var bodyLen int
 	defer t.wg.Done()
 	for data := range q {
 		for {
@@ -224,6 +247,7 @@ func (t *Tsdb) flushEvents() {
 			body.Reset()
 			snappyBody := snappy.NewWriter(body)
 			snappyBody.Write(data)
+			bodyLen = body.Len()
 			req, err := http.NewRequest("POST", t.tsdbUrl+"/events", body)
 			if err != nil {
 				panic(err)
@@ -234,7 +258,7 @@ func (t *Tsdb) flushEvents() {
 			diff := time.Since(pre)
 			if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				b.Reset()
-				log.Debug("GrafanaNet sent event in %s -msg size %d", diff, body.Len())
+				log.Debug("GrafanaNet sent event in %s -msg size %d", diff, bodyLen)
 				resp.Body.Close()
 				ioutil.ReadAll(resp.Body)
 				break
