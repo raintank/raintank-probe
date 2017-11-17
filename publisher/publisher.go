@@ -191,6 +191,7 @@ func (t *Tsdb) flushMetrics(shard int) {
 		Jitter: true,
 	}
 	body := new(bytes.Buffer)
+	var bodyLen int
 	defer t.wg.Done()
 	for data := range q {
 		for {
@@ -198,6 +199,7 @@ func (t *Tsdb) flushMetrics(shard int) {
 			body.Reset()
 			snappyBody := snappy.NewWriter(body)
 			snappyBody.Write(data)
+			bodyLen = body.Len()
 			req, err := http.NewRequest("POST", t.tsdbUrl+"/metrics", body)
 			if err != nil {
 				panic(err)
@@ -208,7 +210,7 @@ func (t *Tsdb) flushMetrics(shard int) {
 			diff := time.Since(pre)
 			if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				b.Reset()
-				log.Debug("GrafanaNet sent metrics in %s -msg size %d", diff, body.Len())
+				log.Debug("GrafanaNet sent metrics in %s -msg size %d", diff, bodyLen)
 				resp.Body.Close()
 				ioutil.ReadAll(resp.Body)
 				break
@@ -237,6 +239,7 @@ func (t *Tsdb) flushEvents() {
 		Jitter: true,
 	}
 	body := new(bytes.Buffer)
+	var bodyLen int
 	defer t.wg.Done()
 	for data := range q {
 		for {
@@ -244,6 +247,7 @@ func (t *Tsdb) flushEvents() {
 			body.Reset()
 			snappyBody := snappy.NewWriter(body)
 			snappyBody.Write(data)
+			bodyLen = body.Len()
 			req, err := http.NewRequest("POST", t.tsdbUrl+"/events", body)
 			if err != nil {
 				panic(err)
@@ -254,7 +258,7 @@ func (t *Tsdb) flushEvents() {
 			diff := time.Since(pre)
 			if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				b.Reset()
-				log.Debug("GrafanaNet sent event in %s -msg size %d", diff, body.Len())
+				log.Debug("GrafanaNet sent event in %s -msg size %d", diff, bodyLen)
 				resp.Body.Close()
 				ioutil.ReadAll(resp.Body)
 				break
