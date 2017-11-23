@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
+	eventMsg "github.com/grafana/worldping-gw/msg"
 	"github.com/jpillora/backoff"
 	"github.com/raintank/worldping-api/pkg/log"
 	"gopkg.in/raintank/schema.v1"
@@ -22,6 +23,7 @@ import (
 var (
 	Publisher          *Tsdb
 	maxMetricsPerFlush = 10000
+	maxEventsPerFlush  = 10000
 	maxFlushWait       = time.Millisecond * 500
 )
 
@@ -43,7 +45,7 @@ type Tsdb struct {
 	shutdown           chan struct{}
 	wg                 *sync.WaitGroup
 	metricsIn          chan *schema.MetricData
-	eventsIn           chan *schema.ProbeEvent
+	eventsIn           chan *eventMsg.ProbeEvent
 	client             *http.Client
 }
 
@@ -54,10 +56,10 @@ func NewTsdb(u *url.URL, apiKey string, concurrency int) *Tsdb {
 		tsdbKey:            apiKey,
 		concurrency:        concurrency,
 		metricsWriteQueues: make([]chan []byte, concurrency),
-		eventsWriteQueue:   make(chan []byte, 100),
+		eventsWriteQueue:   make(chan []byte, concurrency),
 		shutdown:           make(chan struct{}),
 		metricsIn:          make(chan *schema.MetricData, 1000000),
-		eventsIn:           make(chan *schema.ProbeEvent, 1000000),
+		eventsIn:           make(chan *eventMsg.ProbeEvent, 50000),
 		wg:                 &sync.WaitGroup{},
 	}
 	for i := 0; i < concurrency; i++ {
@@ -83,7 +85,7 @@ func NewTsdb(u *url.URL, apiKey string, concurrency int) *Tsdb {
 	t.client = &http.Client{
 		Timeout: time.Second * 10,
 	}
-	t.client.Transport = transport
+	//t.client.Transport = transport
 	go t.run()
 	return t
 }
@@ -95,12 +97,13 @@ func (t *Tsdb) Add(metrics []*schema.MetricData) {
 	}
 }
 
-func (t *Tsdb) AddEvent(event *schema.ProbeEvent) {
+func (t *Tsdb) AddEvent(event *eventMsg.ProbeEvent) {
 	t.eventsIn <- event
 }
 
 func (t *Tsdb) run() {
 	metrics := make([][]*schema.MetricData, t.concurrency)
+	events := make([]*eventMsg.ProbeEvent, 0, maxEventsPerFlush)
 	for i := 0; i < t.concurrency; i++ {
 		// buffers for holding metrics before flushing.
 		metrics[i] = make([]*schema.MetricData, 0, maxMetricsPerFlush)
@@ -127,6 +130,18 @@ func (t *Tsdb) run() {
 		metrics[shard] = metrics[shard][:0]
 	}
 
+	flushEvents := func() {
+		if len(events) == 0 {
+			return
+		}
+		data, err := eventMsg.CreateProbeEventsMsg(events)
+		if err != nil {
+			panic(err)
+		}
+		t.eventsWriteQueue <- data
+		events = events[:0]
+	}
+
 	hasher := fnv.New32a()
 
 	ticker := time.NewTicker(maxFlushWait)
@@ -147,19 +162,18 @@ func (t *Tsdb) run() {
 			for shard := 0; shard < t.concurrency; shard++ {
 				flushMetrics(shard)
 			}
+			flushEvents()
 		case event := <-t.eventsIn:
-			id := time.Now().UnixNano()
-			body, err := msg.CreateProbeEventMsg(event, id, msg.FormatProbeEventMsgp)
-			if err != nil {
-				log.Error(3, "Unable to convert event to ProbeEventMsgp.", "error", err)
-				continue
+			events = append(events, event)
+			if len(events) == maxEventsPerFlush {
+				flushEvents()
 			}
-			t.eventsWriteQueue <- body
 		case <-t.shutdown:
 			for shard := 0; shard < t.concurrency; shard++ {
 				flushMetrics(shard)
 				close(t.metricsWriteQueues[shard])
 			}
+			flushEvents()
 			close(t.eventsWriteQueue)
 			return
 		}
