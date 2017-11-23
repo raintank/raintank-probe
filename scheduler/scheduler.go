@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	eventMsg "github.com/grafana/worldping-gw/msg"
 	"github.com/raintank/raintank-probe/checks"
 	"github.com/raintank/raintank-probe/probe"
 	"github.com/raintank/raintank-probe/publisher"
@@ -141,7 +142,7 @@ func (c *CheckInstance) run(t time.Time) {
 				c.StateChange = time.Now()
 				//send Error event.
 				log.Info("%s is in error state", desc)
-				event := schema.ProbeEvent{
+				event := eventMsg.ProbeEvent{
 					EventType: "monitor_state",
 					OrgId:     c.Check.OrgId,
 					Severity:  "ERROR",
@@ -161,7 +162,7 @@ func (c *CheckInstance) run(t time.Time) {
 			c.StateChange = time.Now()
 			//send OK event.
 			log.Info("%s is now in OK state", desc)
-			event := schema.ProbeEvent{
+			event := eventMsg.ProbeEvent{
 				EventType: "monitor_state",
 				OrgId:     c.Check.OrgId,
 				Severity:  "OK",
