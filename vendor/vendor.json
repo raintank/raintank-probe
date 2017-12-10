@@ -1,0 +1,235 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "xsLJUaqRupQXOzcjjMFrGdi2CTM=",
+			"path": "github.com/glacjay/goini",
+			"revision": "fd3024d87ee21a36d3ccc4367f509fec89cd90ee",
+			"revisionTime": "2016-11-20T06:25:52Z"
+		},
+		{
+			"checksumSHA1": "2sj/DbXoXdnPAfjAEyhS0Jj5QL0=",
+			"origin": "github.com/raintank/worldping-api/vendor/github.com/go-stack/stack",
+			"path": "github.com/go-stack/stack",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "p/8vSviYF91gFflhrt5vkyksroo=",
+			"path": "github.com/golang/snappy",
+			"revision": "553a641470496b2327abcac10b36396bd98e45c9",
+			"revisionTime": "2017-02-15T23:32:05Z"
+		},
+		{
+			"checksumSHA1": "oozAtDM7zyQcNmoi1MF0HNECXBk=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "cdedf21e585dae942951e34d6defc3215b4280fa",
+			"revisionTime": "2017-12-10T03:53:53Z"
+		},
+		{
+			"checksumSHA1": "2b05iFLBjNwhqBQtFtIuC+/ezfw=",
+			"path": "github.com/graarh/golang-socketio",
+			"revision": "2c44953b9b5fcd4da83ec8816f002ce68a12ef2d",
+			"revisionTime": "2017-05-10T16:27:25Z"
+		},
+		{
+			"checksumSHA1": "Yy4eN9/8WEN6w3zXKljHUEW6iC0=",
+			"path": "github.com/graarh/golang-socketio/protocol",
+			"revision": "2c44953b9b5fcd4da83ec8816f002ce68a12ef2d",
+			"revisionTime": "2017-05-10T16:27:25Z"
+		},
+		{
+			"checksumSHA1": "sJu0Oxc+CTNpsJmOjtBXRkGqB3I=",
+			"path": "github.com/graarh/golang-socketio/transport",
+			"revision": "2c44953b9b5fcd4da83ec8816f002ce68a12ef2d",
+			"revisionTime": "2017-05-10T16:27:25Z"
+		},
+		{
+			"checksumSHA1": "hW4LQEBFkoAmfpeVulEfOTzDiLc=",
+			"origin": "github.com/raintank/worldping-api/vendor/github.com/grafana/grafana/pkg/log",
+			"path": "github.com/grafana/grafana/pkg/log",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "i+UWyiC1sMj9+o/nVF+VWoxA3nw=",
+			"origin": "github.com/raintank/worldping-api/vendor/github.com/grafana/grafana/pkg/util",
+			"path": "github.com/grafana/grafana/pkg/util",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "NzOlY/FY1c5Ip0XTw1MQySOKnbM=",
+			"path": "github.com/grafana/worldping-gw/msg",
+			"revision": "b9efdc6e1766ba51a1d017661c0649d7e74c3925",
+			"revisionTime": "2017-11-23T14:53:11Z"
+		},
+		{
+			"checksumSHA1": "uwLJKzdaOkjXimp+Xoo6s+dqNMA=",
+			"origin": "github.com/raintank/worldping-api/vendor/github.com/inconshreveable/log15",
+			"path": "github.com/inconshreveable/log15",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "a1gohr0n5wQGoiEdvuBapzhfMfU=",
+			"origin": "github.com/raintank/worldping-api/vendor/github.com/inconshreveable/log15/term",
+			"path": "github.com/inconshreveable/log15/term",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "qekNouYjoxRxaEZeD6GtySY1wlM=",
+			"path": "github.com/jpillora/backoff",
+			"revision": "8eab2debe79d12b7bd3d10653910df25fa9552ba",
+			"revisionTime": "2017-09-18T00:21:02Z"
+		},
+		{
+			"checksumSHA1": "rCffFCN6TpDAN3Jylyo8RFzhQ9E=",
+			"origin": "github.com/raintank/worldping-api/vendor/github.com/mattn/go-colorable",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "NkbetqlpWBi3gP08JDneC+axTKw=",
+			"origin": "github.com/raintank/worldping-api/vendor/github.com/mattn/go-isatty",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "Mj3A6fCZGNH88e945SCXgnR+xLE=",
+			"path": "github.com/miekg/dns",
+			"revision": "3bbde607ac2132f47c307b292594a1af4f619fde",
+			"revisionTime": "2017-12-07T17:12:20Z"
+		},
+		{
+			"checksumSHA1": "8U5pEHFpXd1/Klgp+C/a6TqWoh8=",
+			"origin": "github.com/grafana/worldping-gw/vendor/github.com/philhofer/fwd",
+			"path": "github.com/philhofer/fwd",
+			"revision": "bb6d471dc95d4fe11e432687f8b70ff496cf3136",
+			"revisionTime": "2017-09-05T21:21:22Z"
+		},
+		{
+			"checksumSHA1": "IFyipWLcQbst1cqvQg3qvkQUh6Y=",
+			"path": "github.com/raintank/go-pinger",
+			"revision": "d66973a5d91cc3fff397a9eeeb2f8137be76b949",
+			"revisionTime": "2017-11-17T09:53:24Z"
+		},
+		{
+			"checksumSHA1": "oCMADD0xqElYRIXBgNkBGHXGQyk=",
+			"path": "github.com/raintank/worldping-api/pkg/log",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "6Q0AN8PGwYLZSaCPQz7Kd4Wlf9E=",
+			"path": "github.com/raintank/worldping-api/pkg/models",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "aCCi25ZfI20Pgvh+5ovJXEGeAFQ=",
+			"path": "github.com/raintank/worldping-api/pkg/setting",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "6e7sy2TMWVwean+aAiob2bB9s+c=",
+			"path": "github.com/rakyll/globalconf",
+			"revision": "f3ec558991f8d5e7b1efcc291fa36edef6c47123",
+			"revisionTime": "2017-12-01T07:23:35Z"
+		},
+		{
+			"checksumSHA1": "JfcyRh0rxqwrYvFmsuqo1oU73i4=",
+			"origin": "github.com/grafana/worldping-gw/vendor/github.com/tinylib/msgp/msgp",
+			"path": "github.com/tinylib/msgp/msgp",
+			"revision": "5bb5e1aed7ba5bcc93307153b020e7ffe79b0509",
+			"revisionTime": "2017-12-10T18:02:19Z"
+		},
+		{
+			"checksumSHA1": "1hwn8cgg4EVXhCpJIqmMbzqnUo0=",
+			"origin": "github.com/miekg/dns/vendor/golang.org/x/crypto/ed25519",
+			"path": "golang.org/x/crypto/ed25519",
+			"revision": "3bbde607ac2132f47c307b292594a1af4f619fde",
+			"revisionTime": "2017-12-07T17:12:20Z"
+		},
+		{
+			"checksumSHA1": "LXFcVx8I587SnWmKycSDEq9yvK8=",
+			"origin": "github.com/miekg/dns/vendor/golang.org/x/crypto/ed25519/internal/edwards25519",
+			"path": "golang.org/x/crypto/ed25519/internal/edwards25519",
+			"revision": "3bbde607ac2132f47c307b292594a1af4f619fde",
+			"revisionTime": "2017-12-07T17:12:20Z"
+		},
+		{
+			"checksumSHA1": "uX2McdP4VcQ6zkAF0Q4oyd0rFtU=",
+			"origin": "github.com/miekg/dns/vendor/golang.org/x/net/bpf",
+			"path": "golang.org/x/net/bpf",
+			"revision": "dc871a5d77e227f5bbf6545176ef3eeebf87e76e",
+			"revisionTime": "2017-12-07T22:17:04Z"
+		},
+		{
+			"checksumSHA1": "DqdFGWbLLyVFeDvzvXyf1Y678uA=",
+			"path": "golang.org/x/net/icmp",
+			"revision": "dc871a5d77e227f5bbf6545176ef3eeebf87e76e",
+			"revisionTime": "2017-12-07T22:17:04Z"
+		},
+		{
+			"checksumSHA1": "YoSf+PgTWvHmFVaF3MrtZz3kX38=",
+			"origin": "github.com/miekg/dns/vendor/golang.org/x/net/internal/iana",
+			"path": "golang.org/x/net/internal/iana",
+			"revision": "dc871a5d77e227f5bbf6545176ef3eeebf87e76e",
+			"revisionTime": "2017-12-07T22:17:04Z"
+		},
+		{
+			"checksumSHA1": "nAsnsij7KH63L3WtAqufsY38BsQ=",
+			"origin": "github.com/miekg/dns/vendor/golang.org/x/net/internal/socket",
+			"path": "golang.org/x/net/internal/socket",
+			"revision": "dc871a5d77e227f5bbf6545176ef3eeebf87e76e",
+			"revisionTime": "2017-12-07T22:17:04Z"
+		},
+		{
+			"checksumSHA1": "ZGMENpNTj2hojdJMcrUO+UPKVgE=",
+			"origin": "github.com/miekg/dns/vendor/golang.org/x/net/ipv4",
+			"path": "golang.org/x/net/ipv4",
+			"revision": "dc871a5d77e227f5bbf6545176ef3eeebf87e76e",
+			"revisionTime": "2017-12-07T22:17:04Z"
+		},
+		{
+			"checksumSHA1": "QUvByKIVmIy9c+8+O1XGyh9ynoY=",
+			"origin": "github.com/miekg/dns/vendor/golang.org/x/net/ipv6",
+			"path": "golang.org/x/net/ipv6",
+			"revision": "dc871a5d77e227f5bbf6545176ef3eeebf87e76e",
+			"revisionTime": "2017-12-07T22:17:04Z"
+		},
+		{
+			"checksumSHA1": "0rKHZVlseYn90YkiSIsMKrSBtxA=",
+			"origin": "github.com/raintank/worldping-api/vendor/golang.org/x/sys/unix",
+			"path": "golang.org/x/sys/unix",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "YRD335tkMvgHzkfbfveMUpsE3Bw=",
+			"origin": "github.com/raintank/worldping-api/vendor/gopkg.in/ini.v1",
+			"path": "gopkg.in/ini.v1",
+			"revision": "fb070ccf5fee5c48f8fc2b35db3a4b1cc622d657",
+			"revisionTime": "2017-12-07T09:03:52Z"
+		},
+		{
+			"checksumSHA1": "t1IXFgRN+wt50tRu4lDbFdMZRi0=",
+			"path": "gopkg.in/raintank/schema.v1",
+			"revision": "c068e0c9c054af19c858b2d947741180c09ea6b1",
+			"revisionTime": "2017-11-30T23:02:39Z"
+		},
+		{
+			"checksumSHA1": "u/S3zAPrglfLX3I99wERDWUzYS0=",
+			"path": "gopkg.in/raintank/schema.v1/msg",
+			"revision": "c068e0c9c054af19c858b2d947741180c09ea6b1",
+			"revisionTime": "2017-11-30T23:02:39Z"
+		}
+	],
+	"rootPath": "github.com/raintank/raintank-probe"
+}
