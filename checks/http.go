@@ -53,9 +53,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "gauge",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.DNS,
 		})
@@ -70,9 +70,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "gauge",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.Connect,
 		})
@@ -87,9 +87,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "gauge",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.Send,
 		})
@@ -104,9 +104,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "gauge",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.Wait,
 		})
@@ -121,9 +121,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "gauge",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.Recv,
 		})
@@ -138,9 +138,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "gauge",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.Total,
 		})
@@ -153,9 +153,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "gauge",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.Total,
 		})
@@ -170,9 +170,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "rate",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.Throughput,
 		})
@@ -187,9 +187,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "gauge",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.DataLength,
 		})
@@ -204,9 +204,9 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 			Mtype:    "gauge",
 			Time:     t.Unix(),
 			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
+				fmt.Sprintf("endpoint=%s", check.Slug),
+				fmt.Sprintf("monitor_type=%s", check.Type),
+				fmt.Sprintf("probe=%s", probe.Self.Slug),
 			},
 			Value: *r.StatusCode,
 		})
