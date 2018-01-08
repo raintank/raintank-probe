@@ -47,168 +47,128 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.dns", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.dns",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.dns", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.DNS,
+			Tags:     nil,
+			Value:    *r.DNS,
 		})
 	}
 	if r.Connect != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.connect", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.connect",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.connect", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.Connect,
+			Tags:     nil,
+			Value:    *r.Connect,
 		})
 	}
 	if r.Send != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.send", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.send",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.send", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.Send,
+			Tags:     nil,
+			Value:    *r.Send,
 		})
 	}
 	if r.Wait != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.wait", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.wait",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.wait", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.Wait,
+			Tags:     nil,
+			Value:    *r.Wait,
 		})
 	}
 	if r.Recv != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.recv", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.recv",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.recv", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.Recv,
+			Tags:     nil,
+			Value:    *r.Recv,
 		})
 	}
 	if r.Total != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.total", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.total",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.total", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.Total,
+			Tags:     nil,
+			Value:    *r.Total,
 		})
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.default", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.default",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.default", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.Total,
+			Tags:     nil,
+			Value:    *r.Total,
 		})
 	}
 	if r.Throughput != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.throughput", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.throughput",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.throughput", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "B/s",
 			Mtype:    "rate",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.Throughput,
+			Tags:     nil,
+			Value:    *r.Throughput,
 		})
 	}
 	if r.DataLength != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.dataLength", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.dataLength",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.dataLength", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "B",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.DataLength,
+			Tags:     nil,
+			Value:    *r.DataLength,
 		})
 	}
 	if r.StatusCode != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.statusCode", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.http.statusCode",
+			Metric:   fmt.Sprintf("worldping.%s.%s.http.statusCode", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.StatusCode,
+			Tags:     nil,
+			Value:    *r.StatusCode,
 		})
 	}
 	return metrics
