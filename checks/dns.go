@@ -35,66 +35,50 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.dns.time", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.dns.time",
+			Metric:   fmt.Sprintf("worldping.%s.%s.dns.time", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.Time,
+			Tags:     nil,
+			Value:    *r.Time,
 		})
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.dns.default", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.dns.default",
+			Metric:   fmt.Sprintf("worldping.%s.%s.dns.default", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: *r.Time,
+			Tags:     nil,
+			Value:    *r.Time,
 		})
 	}
 	if r.Ttl != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.dns.ttl", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.dns.ttl",
+			Metric:   fmt.Sprintf("worldping.%s.%s.dns.ttl", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "s",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: float64(*r.Ttl),
+			Tags:     nil,
+			Value:    float64(*r.Ttl),
 		})
 	}
 	if r.Answers != nil {
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.dns.answers", check.Slug, probe.Self.Slug),
-			Metric:   "worldping.dns.time",
+			Metric:   fmt.Sprintf("worldping.%s.%s.dns.answers", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "",
 			Mtype:    "gauge",
 			Time:     t.Unix(),
-			Tags: []string{
-				fmt.Sprintf("endpoint:%s", check.Slug),
-				fmt.Sprintf("monitor_type:%s", check.Type),
-				fmt.Sprintf("probe:%s", probe.Self.Slug),
-			},
-			Value: float64(*r.Answers),
+			Tags:     nil,
+			Value:    float64(*r.Answers),
 		})
 	}
 

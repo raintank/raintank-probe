@@ -190,31 +190,23 @@ func (c *CheckInstance) run(t time.Time) {
 	metrics = append(metrics, &schema.MetricData{
 		OrgId:    int(c.Check.OrgId),
 		Name:     fmt.Sprintf("worldping.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:   fmt.Sprintf("worldping.%s.ok_state", c.Check.Type),
+		Metric:   fmt.Sprintf("worldping.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
 		Interval: int(c.Check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
 		Time:     t.Unix(),
-		Tags: []string{
-			fmt.Sprintf("endpoint:%s", c.Check.Slug),
-			fmt.Sprintf("monitor_type:%s", c.Check.Type),
-			fmt.Sprintf("probe:%s", probe.Self.Slug),
-		},
-		Value: okState,
+		Tags:     nil,
+		Value:    okState,
 	}, &schema.MetricData{
 		OrgId:    int(c.Check.OrgId),
 		Name:     fmt.Sprintf("worldping.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:   fmt.Sprintf("worldping.%s.error_state", c.Check.Type),
+		Metric:   fmt.Sprintf("worldping.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
 		Interval: int(c.Check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
 		Time:     t.Unix(),
-		Tags: []string{
-			fmt.Sprintf("endpoint:%s", c.Check.Slug),
-			fmt.Sprintf("monitor_type:%s", c.Check.Type),
-			fmt.Sprintf("probe:%s", probe.Self.Slug),
-		},
-		Value: errState,
+		Tags:     nil,
+		Value:    errState,
 	})
 
 	for _, m := range metrics {
