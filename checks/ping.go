@@ -19,7 +19,7 @@ const count = 5
 // global co-oridinator shared between all go-routines.
 var GlobalPinger *pinger.Pinger
 
-func init() {
+func InitPinger() {
 	var err error
 	GlobalPinger, err = pinger.NewPinger("all", 10000)
 	if err != nil {
