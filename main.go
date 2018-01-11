@@ -112,6 +112,7 @@ func main() {
 			log.Error(3, "Could not parse publicChecks file. %s", err.Error())
 		}
 	}
+	checks.InitPinger()
 
 	jobScheduler := scheduler.New(*healthHosts)
 	go jobScheduler.CheckHealth()
