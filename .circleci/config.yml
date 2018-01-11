@@ -1,0 +1,64 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/src/github.com/raintank/raintank-probe
+    docker:
+      - image: circleci/golang:1.9.2
+    steps:
+      - checkout
+      - run:
+          name: build binary
+          command: scripts/build.sh
+      - persist_to_workspace:
+          root: .
+          paths:
+            - build
+
+  test:
+    working_directory: /go/src/github.com/raintank/raintank-probe
+    docker:
+      - image: circleci/golang:1.9.2
+    steps:
+      - checkout
+      - run:
+          name: unit tests
+          command: go test -v -race $(go list ./... | grep -v /vendor/)
+      - run:
+          name: vet
+          command: go vet $(go list ./... | grep -v /vendor/)
+
+  deploy:
+    docker:
+      - image: circleci/ruby:2.3
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - setup_remote_docker
+      - run:
+          name: install dependencies for buidling packages
+          command: bundle install
+      - run:
+          name: build docker image
+          command: scripts/build_docker.sh
+      - run:
+          name: build packages
+          command: scripts/package.sh
+      - deploy:
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              scripts/deploy.sh
+              docker login -u $DOCKER_USER -p $DOCKER_PASS
+              scripts/deploy_docker.sh
+            fi
+
+workflows:
+  version: 2
+  build_accept_deploy:
+    jobs:
+      - build
+      - test
+      - deploy:
+          requires:
+            - build
+            - test
