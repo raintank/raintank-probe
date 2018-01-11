@@ -20,15 +20,14 @@ type RaintankProbeCheck interface {
 }
 
 type CheckInstance struct {
-	Ticker      *time.Ticker
+	Ticker      *Ticker
 	Exec        RaintankProbeCheck
 	Check       *m.CheckWithSlug
 	State       m.CheckEvalResult
-	LastRun     time.Time
 	StateChange time.Time
 	LastError   string
 	stopped     bool
-	sync.Mutex
+	sync.RWMutex
 }
 
 func NewCheckInstance(c *m.CheckWithSlug, probeHealthy bool) (*CheckInstance, error) {
@@ -38,145 +37,144 @@ func NewCheckInstance(c *m.CheckWithSlug, probeHealthy bool) (*CheckInstance, er
 		return nil, err
 	}
 	instance := &CheckInstance{
-		Check: c,
-		Exec:  executor,
-		State: m.EvalResultUnknown,
+		Check:  c,
+		Exec:   executor,
+		State:  m.EvalResultUnknown,
+		Ticker: NewTicker(c.Frequency, c.Offset),
 	}
+	go instance.loop()
 	if probeHealthy {
-		go instance.Run()
+		instance.Run()
 	}
 	return instance, nil
 }
 
 func (i *CheckInstance) Update(c *m.CheckWithSlug, probeHealthy bool) error {
+	log.Info("updating execution thread of %s check for %s", c.Type, c.Slug)
 	executor, err := GetCheck(c.Type, c.Settings)
 	if err != nil {
 		return err
 	}
 	i.Lock()
-	if i.Ticker != nil {
-		i.Ticker.Stop()
-	}
 	i.Check = c
 	i.Exec = executor
+	i.Ticker.Update(c.Frequency, c.Offset)
 	i.Unlock()
-	if probeHealthy {
-		go i.Run()
-	}
 	return nil
 }
 
 func (i *CheckInstance) Stop() {
-	log.Debug("stopping execution of %s %s", i.Check.Slug, i.Check.Type)
-	i.Lock()
-	i.stopped = true
-	if i.Ticker != nil {
-		i.Ticker.Stop()
-	}
-	i.Unlock()
+	i.RLock()
+	log.Info("pausing execution thread of %s check for %s", i.Check.Type, i.Check.Slug)
+	i.RUnlock()
+	i.Ticker.Stop()
 }
 
-func (c *CheckInstance) Run() {
-	c.Lock()
-	c.stopped = false
+func (i *CheckInstance) Delete() {
+	i.RLock()
+	log.Info("stopping execution thread of %s check for %s", i.Check.Type, i.Check.Slug)
+	i.RUnlock()
+	i.Ticker.Delete()
+}
+
+func (i *CheckInstance) Run() {
+	i.RLock()
+	log.Info("enabling execution thread of %s check for %s", i.Check.Type, i.Check.Slug)
+	i.RUnlock()
+	i.Ticker.Start()
+}
+
+func (c *CheckInstance) loop() {
+	c.RLock()
 	log.Info("Starting execution loop for %s check for %s, Frequency: %d, Offset: %d", c.Check.Type, c.Check.Slug, c.Check.Frequency, c.Check.Offset)
-	now := time.Now().Unix()
-	waitTime := ((c.Check.Frequency + c.Check.Offset) - (now % c.Check.Frequency)) % c.Check.Frequency
-	if waitTime == c.Check.Offset {
-		waitTime = 0
-	}
-	log.Debug("executing %s check for %s in %d seconds", c.Check.Type, c.Check.Slug, waitTime)
-	c.Unlock()
-	if waitTime > 0 {
-		time.Sleep(time.Second * time.Duration(waitTime))
-	}
-	c.Lock()
-	if c.stopped {
-		c.Unlock()
-		return
-	}
-	c.Ticker = time.NewTicker(time.Duration(c.Check.Frequency) * time.Second)
-	c.Unlock()
-	c.run(time.Now())
+	c.RUnlock()
 	for t := range c.Ticker.C {
 		c.run(t)
 	}
+	c.RLock()
+	log.Info("execution loop for %s check for %s has ended.", c.Check.Type, c.Check.Slug)
+	c.RUnlock()
 }
 
 func (c *CheckInstance) run(t time.Time) {
-	if !c.LastRun.IsZero() {
-		delta := time.Since(c.LastRun)
-		freq := time.Duration(c.Check.Frequency) * time.Second
-		if delta > (freq + time.Duration(100)*time.Millisecond) {
-			log.Warn("check is running late by %d milliseconds", delta/time.Millisecond)
-		}
-	}
-	stopped := false
 	c.Lock()
-	stopped = c.stopped
-	c.LastRun = t
-	c.Unlock()
-	if stopped {
-		log.Debug("aborting check as it has been stopped")
+	desc := fmt.Sprintf("%s check for %s", c.Check.Type, c.Check.Slug)
+	delta := time.Since(t)
+	if delta > (100 * time.Millisecond) {
+		log.Warn("%s check for %s is running late by %d milliseconds", c.Check.Type, c.Check.Slug, delta/time.Millisecond)
+	}
+	if (delta / time.Second) > time.Duration(c.Check.Frequency) {
+		log.Error(3, "execution run of %s skipped due to being too old.", desc)
+		c.Unlock()
 		return
 	}
-	desc := fmt.Sprintf("%s check for %s", c.Check.Type, c.Check.Slug)
-	log.Debug("Running %s", desc)
-	results, err := c.Exec.Run()
+
+	exec := c.Exec
+	check := c.Check
+	state := c.State
+	stateChange := c.StateChange
+	lastError := c.LastError
+	c.Unlock()
+
+	log.Debug("executing %s", desc)
+	results, err := exec.Run()
 	var metrics []*schema.MetricData
 	if err != nil {
 		log.Error(3, "Failed to execute %s", desc, err)
 		return
-	} else {
-		metrics = results.Metrics(t, c.Check)
-		log.Debug("got %d metrics for %s", len(metrics), desc)
-		// check if we need to send any events.  Events are sent on state change, or if the error reason has changed
-		// or the check has been in an error state for 10minutes.
-		newState := m.EvalResultOK
-		if msg := results.ErrorMsg(); msg != "" {
-			log.Debug("%s failed: %s", desc, msg)
-			newState = m.EvalResultCrit
-			if (c.State != newState) || (msg != c.LastError) || (time.Since(c.StateChange) > time.Minute*10) {
-				c.State = newState
-				c.LastError = msg
-				c.StateChange = time.Now()
-				//send Error event.
-				log.Info("%s is in error state", desc)
-				event := eventMsg.ProbeEvent{
-					EventType: "monitor_state",
-					OrgId:     c.Check.OrgId,
-					Severity:  "ERROR",
-					Source:    "monitor_collector",
-					Timestamp: t.UnixNano() / int64(time.Millisecond),
-					Message:   msg,
-					Tags: map[string]string{
-						"endpoint":     c.Check.Slug,
-						"collector":    probe.Self.Slug,
-						"monitor_type": string(c.Check.Type),
-					},
-				}
-				publisher.Publisher.AddEvent(&event)
-			}
-		} else if c.State != newState {
+	}
+	metrics = results.Metrics(t, check)
+	log.Debug("got %d metrics for %s", len(metrics), desc)
+	// check if we need to send any events.  Events are sent on state change, or if the error reason has changed
+	// or the check has been in an error state for 10minutes.
+	newState := m.EvalResultOK
+	if msg := results.ErrorMsg(); msg != "" {
+		log.Debug("%s failed: %s", desc, msg)
+		newState = m.EvalResultCrit
+		if (state != newState) || (msg != lastError) || (time.Since(stateChange) > time.Minute*10) {
+			c.Lock()
 			c.State = newState
+			c.LastError = msg
 			c.StateChange = time.Now()
-			//send OK event.
-			log.Info("%s is now in OK state", desc)
+			c.Unlock()
+			//send Error event.
+			log.Info("%s is in error state", desc)
 			event := eventMsg.ProbeEvent{
 				EventType: "monitor_state",
-				OrgId:     c.Check.OrgId,
-				Severity:  "OK",
+				OrgId:     check.OrgId,
+				Severity:  "ERROR",
 				Source:    "monitor_collector",
 				Timestamp: t.UnixNano() / int64(time.Millisecond),
-				Message:   "Monitor now Ok.",
+				Message:   msg,
 				Tags: map[string]string{
-					"endpoint":     c.Check.Slug,
+					"endpoint":     check.Slug,
 					"collector":    probe.Self.Slug,
-					"monitor_type": string(c.Check.Type),
+					"monitor_type": string(check.Type),
 				},
 			}
 			publisher.Publisher.AddEvent(&event)
 		}
+	} else if state != newState {
+		c.Lock()
+		c.State = newState
+		c.StateChange = time.Now()
+		c.Unlock()
+		//send OK event.
+		log.Info("%s is now in OK state", desc)
+		event := eventMsg.ProbeEvent{
+			EventType: "monitor_state",
+			OrgId:     check.OrgId,
+			Severity:  "OK",
+			Source:    "monitor_collector",
+			Timestamp: t.UnixNano() / int64(time.Millisecond),
+			Message:   "Monitor now Ok.",
+			Tags: map[string]string{
+				"endpoint":     check.Slug,
+				"collector":    probe.Self.Slug,
+				"monitor_type": string(check.Type),
+			},
+		}
+		publisher.Publisher.AddEvent(&event)
 	}
 
 	// set or ok_state, error_state metrics.
@@ -188,20 +186,20 @@ func (c *CheckInstance) run(t time.Time) {
 		okState = 1
 	}
 	metrics = append(metrics, &schema.MetricData{
-		OrgId:    int(c.Check.OrgId),
-		Name:     fmt.Sprintf("worldping.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:   fmt.Sprintf("worldping.%s.%s.%s.ok_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Interval: int(c.Check.Frequency),
+		OrgId:    int(check.OrgId),
+		Name:     fmt.Sprintf("worldping.%s.%s.%s.ok_state", check.Slug, probe.Self.Slug, check.Type),
+		Metric:   fmt.Sprintf("worldping.%s.%s.%s.ok_state", check.Slug, probe.Self.Slug, check.Type),
+		Interval: int(check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
 		Time:     t.Unix(),
 		Tags:     nil,
 		Value:    okState,
 	}, &schema.MetricData{
-		OrgId:    int(c.Check.OrgId),
-		Name:     fmt.Sprintf("worldping.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Metric:   fmt.Sprintf("worldping.%s.%s.%s.error_state", c.Check.Slug, probe.Self.Slug, c.Check.Type),
-		Interval: int(c.Check.Frequency),
+		OrgId:    int(check.OrgId),
+		Name:     fmt.Sprintf("worldping.%s.%s.%s.error_state", check.Slug, probe.Self.Slug, check.Type),
+		Metric:   fmt.Sprintf("worldping.%s.%s.%s.error_state", check.Slug, probe.Self.Slug, check.Type),
+		Interval: int(check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
 		Time:     t.Unix(),
@@ -272,7 +270,7 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 				err := existing.Update(c, s.Healthy)
 				if err != nil {
 					log.Error(3, "Unable to update check instance for checkId=%d", c.Id, err)
-					existing.Stop()
+					existing.Delete()
 					delete(s.Checks, c.Id)
 				}
 			}
@@ -289,7 +287,7 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 	for id, instance := range s.Checks {
 		if _, ok := seenChecks[id]; !ok {
 			log.Info("checkId=%d no longer scheduled to this probe, removing it.", id)
-			instance.Stop()
+			instance.Delete()
 			delete(s.Checks, id)
 		}
 	}
@@ -303,7 +301,7 @@ func (s *Scheduler) Create(check *m.CheckWithSlug) {
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; ok {
 		log.Warn("recieved create event for check that is already running. checkId=%d", check.Id)
-		existing.Stop()
+		existing.Delete()
 		delete(s.Checks, check.Id)
 	}
 	instance, err := NewCheckInstance(check, s.Healthy)
@@ -332,7 +330,7 @@ func (s *Scheduler) Update(check *m.CheckWithSlug) {
 		err := existing.Update(check, s.Healthy)
 		if err != nil {
 			log.Error(3, "Unable to update check instance for checkId=%d, %s", check.Id, err)
-			existing.Stop()
+			existing.Delete()
 			delete(s.Checks, check.Id)
 		}
 	}
@@ -346,7 +344,7 @@ func (s *Scheduler) Remove(check *m.CheckWithSlug) {
 	if existing, ok := s.Checks[check.Id]; !ok {
 		log.Warn("recieved remove event for check that is not currently running. checkId=%d", check.Id)
 	} else {
-		existing.Stop()
+		existing.Delete()
 		delete(s.Checks, check.Id)
 	}
 	s.Unlock()
