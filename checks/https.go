@@ -596,7 +596,14 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 
 	// Regex
 	if p.ExpectRegex != "" {
-		rgx, err := regexp.Compile(p.ExpectRegex)
+		inverse := false
+		expr := p.ExpectRegex
+		if strings.HasPrefix(expr, "!") && strings.HasSuffix(expr, "!") {
+			expr = strings.TrimPrefix(expr, "!")
+			expr = strings.TrimSuffix(expr, "!")
+			inverse = true
+		}
+		rgx, err := regexp.Compile(expr)
 		if err != nil {
 			msg := fmt.Sprintf("expectRegex error. %s", err.Error())
 
@@ -632,14 +639,25 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 			result.Error = &msg
 			return result, nil
 		}
+		switch inverse {
+		case true:
+			if rgx.MatchString(decodedBody) {
+				log.Debug("expectRegex %s unexpectedly matched returned body %s", p.ExpectRegex, decodedBody)
 
-		if !rgx.MatchString(decodedBody) {
-			log.Debug("expectRegex %s did not match returned body %s", p.ExpectRegex, decodedBody)
+				msg := "expectRegex unexpectedly matched"
+				result.Error = &msg
+				return result, nil
+			}
+		case false:
+			if !rgx.MatchString(decodedBody) {
+				log.Debug("expectRegex %s did not match returned body %s", p.ExpectRegex, decodedBody)
 
-			msg := "expectRegex did not match"
-			result.Error = &msg
-			return result, nil
+				msg := "expectRegex did not match"
+				result.Error = &msg
+				return result, nil
+			}
 		}
+
 	}
 
 	return result, nil
