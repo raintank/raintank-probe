@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
@@ -37,20 +35,17 @@ var (
 	logLevel    = flag.Int("log-level", 2, "log level. 0=TRACE|1=DEBUG|2=INFO|3=WARN|4=ERROR|5=CRITICAL|6=FATAL")
 	confFile    = flag.String("config", "/etc/raintank/probe.ini", "configuration file path")
 
-	serverAddr       = flag.String("server-url", "ws://localhost:80/", "address of worldping-api server")
-	tsdbAddr         = flag.String("tsdb-url", "http://localhost:80/", "address of tsdb server")
-	nodeName         = flag.String("name", "", "agent-name")
-	apiKey           = flag.String("api-key", "not_very_secret_key", "Api Key")
-	concurrency      = flag.Int("concurrency", 5, "concurrency number of requests to TSDB.")
-	publicChecksFile = flag.String("public-checks", "/etc/raintank/publicChecks.json", "path to publicChecks json file.")
-	healthHosts      = flag.String("health-hosts", "google.com,youtube.com,facebook.com,twitter.com,wikipedia.com", "comma separted list of hosts to ping to determin network health of this probe.")
+	serverAddr  = flag.String("server-url", "ws://localhost:80/", "address of worldping-api server")
+	tsdbAddr    = flag.String("tsdb-url", "http://localhost:80/", "address of tsdb server")
+	nodeName    = flag.String("name", "", "agent-name")
+	apiKey      = flag.String("api-key", "not_very_secret_key", "Api Key")
+	concurrency = flag.Int("concurrency", 5, "concurrency number of requests to TSDB.")
+	healthHosts = flag.String("health-hosts", "google.com,youtube.com,facebook.com,twitter.com,wikipedia.com", "comma separted list of hosts to ping to determin network health of this probe.")
 
 	// healthz endpoint
 	healthzListenAddr = flag.String("healthz-listen-addr", "localhost:7180", "address to listen on for healthz http api.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
-
-	PublicChecks []m.CheckWithSlug
 )
 
 func main() {
@@ -103,15 +98,6 @@ func main() {
 		log.Fatal(4, "name must be set.")
 	}
 
-	file, err := ioutil.ReadFile(*publicChecksFile)
-	if err != nil {
-		log.Error(3, "Could not read publicChecks file. %s", err.Error())
-	} else {
-		err = json.Unmarshal(file, &PublicChecks)
-		if err != nil {
-			log.Error(3, "Could not parse publicChecks file. %s", err.Error())
-		}
-	}
 	checks.InitPinger()
 
 	jobScheduler := scheduler.New(*healthHosts)
@@ -178,12 +164,6 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 		}
 	})
 	client.On("refresh", func(c *gosocketio.Channel, checks []*m.CheckWithSlug) {
-		if probe.Self.Public {
-			for _, c := range PublicChecks {
-				check := c
-				checks = append(checks, &check)
-			}
-		}
 		jobScheduler.Refresh(checks)
 	})
 	client.On("created", func(c *gosocketio.Channel, check m.CheckWithSlug) {
