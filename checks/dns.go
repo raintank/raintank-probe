@@ -1,14 +1,17 @@
 package checks
 
 import (
+	"bytes"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/miekg/dns"
 	"github.com/raintank/raintank-probe/probe"
+	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
 	"gopkg.in/raintank/schema.v1"
 )
@@ -106,12 +109,13 @@ func (t *DnsRecordType) IsValid() bool {
 
 // Our check definition.
 type RaintankProbeDns struct {
-	RecordName string
-	RecordType DnsRecordType
-	Servers    []string
-	Port       int64
-	Protocol   string
-	Timeout    time.Duration
+	RecordName  string
+	RecordType  DnsRecordType
+	Servers     []string
+	Port        int64
+	Protocol    string
+	Timeout     time.Duration
+	ExpectRegex string
 }
 
 func NewRaintankDnsProbe(settings map[string]interface{}) (*RaintankProbeDns, error) {
@@ -204,6 +208,16 @@ func NewRaintankDnsProbe(settings map[string]interface{}) (*RaintankProbeDns, er
 		return nil, fmt.Errorf("invalid protocol.")
 	}
 
+	expectRegex, ok := settings["expectRegex"]
+	if !ok {
+		p.ExpectRegex = ""
+	} else {
+		p.ExpectRegex, ok = expectRegex.(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid value for expectRegex, must be string.")
+		}
+	}
+
 	return &p, nil
 }
 
@@ -246,6 +260,48 @@ func (p *RaintankProbeDns) Run() (CheckResult, error) {
 		if answers > 0 {
 			ttl := r.Answer[0].Header().Ttl
 			result.Ttl = &ttl
+		}
+		if p.ExpectRegex != "" {
+			// push the answers into a text blob
+			var b bytes.Buffer
+			for _, a := range r.Answer {
+				b.WriteString(a.String())
+				b.WriteString("\n")
+			}
+			inverse := false
+			expr := p.ExpectRegex
+			if strings.HasPrefix(expr, "!") && strings.HasSuffix(expr, "!") {
+				expr = strings.TrimPrefix(expr, "!")
+				expr = strings.TrimSuffix(expr, "!")
+				inverse = true
+			}
+			rgx, err := regexp.Compile(expr)
+			if err != nil {
+				msg := fmt.Sprintf("expectRegex error. %s", err.Error())
+
+				result.Error = &msg
+				return result, nil
+			}
+
+			switch inverse {
+			case true:
+				if rgx.MatchString(b.String()) {
+					log.Debug("expectRegex %s unexpectedly matched Answers %s", p.ExpectRegex, b.String())
+
+					msg := "expectRegex unexpectedly matched"
+					result.Error = &msg
+					return result, nil
+				}
+			case false:
+				if !rgx.MatchString(b.String()) {
+					log.Debug("expectRegex %s did not match Answers %s", p.ExpectRegex, b.String())
+
+					msg := "expectRegex did not match"
+					result.Error = &msg
+					return result, nil
+				}
+			}
+
 		}
 		return result, nil
 	}
