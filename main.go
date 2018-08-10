@@ -127,11 +127,7 @@ func main() {
 	}
 	publisher.Init(tsdbUrl, *apiKey, *concurrency)
 
-	client, err := gosocketio.Dial(controllerUrl.String(), transport.GetDefaultWebsocketTransport())
-	if err != nil {
-		log.Fatal(4, "unable to connect to server on url %s: %s", controllerUrl.String(), err)
-	}
-	bindHandlers(client, controllerUrl, jobScheduler, interrupt)
+	go connectController(controllerUrl, jobScheduler, interrupt, true)
 
 	healthz := NewHealthz(jobScheduler)
 	go healthz.Run()
@@ -140,30 +136,78 @@ func main() {
 	log.Info("interrupt")
 	healthz.Stop()
 	jobScheduler.Close()
-	client.Close()
 	publisher.Stop()
 	checks.GlobalPinger.Stop()
 	return
 }
 
-func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobScheduler *scheduler.Scheduler, interrupt chan os.Signal) {
-	client.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
-		log.Error(3, "Disconnected from remote server.")
-		//reconnect
-		connected := false
-		var err error
-		for !connected {
-			client, err = gosocketio.Dial(controllerUrl.String(), transport.GetDefaultWebsocketTransport())
-			if err != nil {
-				log.Error(3, err.Error())
-				time.Sleep(time.Second * 2)
+func connectController(controllerUrl *url.URL, jobScheduler *scheduler.Scheduler, interrupt chan os.Signal, failOncConnect bool) {
+	log.Info("attempting to connect to controller at %s", controllerUrl.Hostname())
+	connected := false
+	var client *gosocketio.Client
+	var err error
+	eventChan := make(chan string, 2)
+	for !connected {
+		client, err = gosocketio.Dial(controllerUrl.String(), transport.GetDefaultWebsocketTransport())
+		if err != nil {
+			log.Error(3, err.Error())
+			if failOncConnect {
+				log.Error(3, "unable to connect to controller on url %s: %s", controllerUrl.String(), err)
+				close(interrupt)
 			} else {
-				connected = true
-				bindHandlers(client, controllerUrl, jobScheduler, interrupt)
+				log.Error(3, "failed to connect to controller. will retry.")
+				time.Sleep(time.Second * 2)
+			}
+		} else {
+			connected = true
+			log.Info("Connected to controller")
+			bindHandlers(client, controllerUrl, jobScheduler, interrupt, eventChan)
+		}
+	}
+
+	maxInactivity := time.Minute * 10
+	timer := time.NewTimer(maxInactivity)
+	for {
+		select {
+		case <-interrupt:
+			client.Close()
+			return
+		case <-timer.C:
+			// we have not received on the notifyRefresh channel.
+			// if the client is alive, close it. Otherwise reconnect
+			if client.IsAlive() {
+				client.Close()
+				// once closed a "disconnected" event will be emitted.
+				// we will then re-establish the connection.
+			} else {
+				go connectController(controllerUrl, jobScheduler, interrupt, false)
+				return
+			}
+		case event := <-eventChan:
+			switch event {
+			case "disconnected":
+				go connectController(controllerUrl, jobScheduler, interrupt, false)
+				return
+			case "refresh":
+				log.Debug("refresh event received on eventChan")
 			}
 		}
+		timer.Reset(maxInactivity)
+	}
+}
+
+func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobScheduler *scheduler.Scheduler, interrupt chan os.Signal, eventChan chan string) {
+	if !client.IsAlive() {
+		log.Error(3, "Connection to controller closed before binding handlers.")
+		eventChan <- "disconnected"
+		return
+	}
+	client.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
+		log.Error(3, "Disconnected from controller.")
+		eventChan <- "disconnected"
 	})
 	client.On("refresh", func(c *gosocketio.Channel, checks []*m.CheckWithSlug) {
+		eventChan <- "refresh"
 		jobScheduler.Refresh(checks)
 	})
 	client.On("created", func(c *gosocketio.Channel, check m.CheckWithSlug) {
