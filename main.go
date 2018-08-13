@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/graarh/golang-socketio"
-	"github.com/graarh/golang-socketio/transport"
+	"github.com/gsocket-io/golang-socketio"
+	"github.com/gsocket-io/golang-socketio/transport"
 	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
 	"github.com/rakyll/globalconf"

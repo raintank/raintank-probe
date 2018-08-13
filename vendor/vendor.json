@@ -28,24 +28,6 @@
 			"revisionTime": "2017-12-10T03:53:53Z"
 		},
 		{
-			"checksumSHA1": "2b05iFLBjNwhqBQtFtIuC+/ezfw=",
-			"path": "github.com/graarh/golang-socketio",
-			"revision": "2c44953b9b5fcd4da83ec8816f002ce68a12ef2d",
-			"revisionTime": "2017-05-10T16:27:25Z"
-		},
-		{
-			"checksumSHA1": "Yy4eN9/8WEN6w3zXKljHUEW6iC0=",
-			"path": "github.com/graarh/golang-socketio/protocol",
-			"revision": "2c44953b9b5fcd4da83ec8816f002ce68a12ef2d",
-			"revisionTime": "2017-05-10T16:27:25Z"
-		},
-		{
-			"checksumSHA1": "sJu0Oxc+CTNpsJmOjtBXRkGqB3I=",
-			"path": "github.com/graarh/golang-socketio/transport",
-			"revision": "2c44953b9b5fcd4da83ec8816f002ce68a12ef2d",
-			"revisionTime": "2017-05-10T16:27:25Z"
-		},
-		{
 			"checksumSHA1": "hW4LQEBFkoAmfpeVulEfOTzDiLc=",
 			"origin": "github.com/raintank/worldping-api/vendor/github.com/grafana/grafana/pkg/log",
 			"path": "github.com/grafana/grafana/pkg/log",
@@ -64,6 +46,24 @@
 			"path": "github.com/grafana/worldping-gw/msg",
 			"revision": "b9efdc6e1766ba51a1d017661c0649d7e74c3925",
 			"revisionTime": "2017-11-23T14:53:11Z"
+		},
+		{
+			"checksumSHA1": "tMA/u91McREdwZwUe6lJAT/OEVg=",
+			"path": "github.com/gsocket-io/golang-socketio",
+			"revision": "054c23d7455a6b81d0597343be317d4dd21ddd14",
+			"revisionTime": "2018-08-13T04:18:50Z"
+		},
+		{
+			"checksumSHA1": "IAE8zUESOGrGkr+QbEy/2wL7wSQ=",
+			"path": "github.com/gsocket-io/golang-socketio/protocol",
+			"revision": "054c23d7455a6b81d0597343be317d4dd21ddd14",
+			"revisionTime": "2018-08-13T04:18:50Z"
+		},
+		{
+			"checksumSHA1": "2Is2AjvCxSsnXVaKHrukHJZEGKg=",
+			"path": "github.com/gsocket-io/golang-socketio/transport",
+			"revision": "054c23d7455a6b81d0597343be317d4dd21ddd14",
+			"revisionTime": "2018-08-13T04:18:50Z"
 		},
 		{
 			"checksumSHA1": "uwLJKzdaOkjXimp+Xoo6s+dqNMA=",

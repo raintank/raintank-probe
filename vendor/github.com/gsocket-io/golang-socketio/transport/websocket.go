@@ -86,6 +86,7 @@ type WebsocketTransport struct {
 	PingTimeout    time.Duration
 	ReceiveTimeout time.Duration
 	SendTimeout    time.Duration
+	Dialer         *websocket.Dialer
 
 	BufferSize int
 
@@ -93,8 +94,10 @@ type WebsocketTransport struct {
 }
 
 func (wst *WebsocketTransport) Connect(url string) (conn Connection, err error) {
-	dialer := websocket.Dialer{HandshakeTimeout: time.Minute}
-	socket, _, err := dialer.Dial(url, wst.RequestHeader)
+	if wst.Dialer == nil {
+		wst.Dialer = websocket.DefaultDialer
+	}
+	socket, _, err := wst.Dialer.Dial(url, wst.RequestHeader)
 	if err != nil {
 		return nil, err
 	}
