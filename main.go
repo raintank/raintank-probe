@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/websocket"
 	"github.com/gsocket-io/golang-socketio"
 	"github.com/gsocket-io/golang-socketio/transport"
 	"github.com/raintank/worldping-api/pkg/log"
@@ -46,6 +47,8 @@ var (
 	healthzListenAddr = flag.String("healthz-listen-addr", "localhost:7180", "address to listen on for healthz http api.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
+
+	wsTransport = transport.GetDefaultWebsocketTransport()
 )
 
 func main() {
@@ -127,6 +130,10 @@ func main() {
 	}
 	publisher.Init(tsdbUrl, *apiKey, *concurrency)
 
+	wsTransport.Dialer = &websocket.Dialer{
+		Proxy:            http.ProxyFromEnvironment,
+		HandshakeTimeout: time.Minute,
+	}
 	go connectController(controllerUrl, jobScheduler, interrupt, true)
 
 	healthz := NewHealthz(jobScheduler)
@@ -148,7 +155,7 @@ func connectController(controllerUrl *url.URL, jobScheduler *scheduler.Scheduler
 	var err error
 	eventChan := make(chan string, 2)
 	for !connected {
-		client, err = gosocketio.Dial(controllerUrl.String(), transport.GetDefaultWebsocketTransport())
+		client, err = gosocketio.Dial(controllerUrl.String(), wsTransport)
 		if err != nil {
 			log.Error(3, err.Error())
 			if failOncConnect {
