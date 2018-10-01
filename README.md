@@ -65,9 +65,9 @@ api-key = <Your Grafana.net ApiKey>
   ```
 
   d.) Manual build of Raintank probe (Great for those wishing to test and contribute)
-  * Download the src and dependencies (you need to have [Golang >= 1.5](https://golang.org/) [downloaded](https://golang.org/dl/) and [installed](https://golang.org/doc/install))
+  * Download the src and dependencies (you need to have [Golang >= 1.9](https://golang.org/) [downloaded](https://golang.org/dl/) and [installed](https://golang.org/doc/install))
   ```
-go get github.com/raintank/raintank-probe
+go get -u -ldflags "-X main.GitHash=$(git describe --long --always)" github.com/raintank/raintank-probe
   ```
   * Create a config  with the probe name created in step 1 and the ApiKey created in step 2.
   ```
