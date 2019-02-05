@@ -91,6 +91,7 @@ If your private network does not allow ICMP traffic to external sites, you will 
 ```
  /etc/raintank/probe.ini 
 ```
+Example probe.ini from docker container
 ```
 log-level = 2
 name = demo1
