@@ -86,7 +86,8 @@ raintank-probe -config <path to your config>
   ```
 
 ## Note on Private Probe ICMP Health Checks
-By default the private probe will determine its own network health by pinging comma separated list of sites google.com,youtube.com,facebook.com,twitter.com,wikipedia.com
+By default the private probe will determine its own network health by pinging this comma separated list of sites: google.com,youtube.com,facebook.com,twitter.com,wikipedia.com
+
 If your private network does not allow ICMP traffic to external sites, you will need to modify probe.ini found here
 ```
  /etc/raintank/probe.ini 
@@ -100,4 +101,4 @@ tsdb-url = https://tsdb-gw.raintank.io/
 api-key = changeme
 health-hosts = icmp-reachable-host.com
 ```
-after modifying the health-hosts to an ICMP reachable host, restart. Then other checks you have assigned to the probe will begin to execute. 
+After modifying the health-hosts to an ICMP reachable host, restart. Then the other endpoint checks you have assigned to the probe will begin to execute. 
