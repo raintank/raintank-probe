@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/gsocket-io/golang-socketio"
+	gosocketio "github.com/gsocket-io/golang-socketio"
 	"github.com/gsocket-io/golang-socketio/transport"
 	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
@@ -172,7 +172,7 @@ func connectController(controllerUrl *url.URL, jobScheduler *scheduler.Scheduler
 		}
 	}
 
-	maxInactivity := time.Minute * 10
+	maxInactivity := time.Minute * 30
 	timer := time.NewTimer(maxInactivity)
 	for {
 		select {
@@ -183,6 +183,7 @@ func connectController(controllerUrl *url.URL, jobScheduler *scheduler.Scheduler
 			// we have not received on the notifyRefresh channel.
 			// if the client is alive, close it. Otherwise reconnect
 			if client.IsAlive() {
+				log.Warn("no refresh received for maxInactivity time. disconnecting from controller.")
 				client.Close()
 				// once closed a "disconnected" event will be emitted.
 				// we will then re-establish the connection.
@@ -198,6 +199,9 @@ func connectController(controllerUrl *url.URL, jobScheduler *scheduler.Scheduler
 			case "refresh":
 				log.Debug("refresh event received on eventChan")
 			}
+		}
+		if !timer.Stop() {
+			<-timer.C
 		}
 		timer.Reset(maxInactivity)
 	}
