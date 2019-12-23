@@ -193,6 +193,7 @@ func (t *Tsdb) Stop() {
 		log.Info("timed out waiting for publisher to stop.")
 		return
 	case <-done:
+		log.Info("publisher stopped")
 		return
 	}
 }

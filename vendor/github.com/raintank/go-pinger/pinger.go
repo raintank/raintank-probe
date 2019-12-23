@@ -117,11 +117,22 @@ func (p *Pinger) Stop() {
 	p.Lock()
 	p.shutdown = true
 	p.Unlock()
-	if p.v4Conn != nil {
-		p.v4Conn.Close()
-	}
-	if p.v6Conn != nil {
-		p.v6Conn.Close()
+	done := make(chan struct{})
+	go func() {
+		if p.v4Conn != nil {
+			p.v4Conn.SetDeadline(time.Now())
+			p.v4Conn.Close()
+		}
+		if p.v6Conn != nil {
+			p.v6Conn.SetDeadline(time.Now())
+			p.v6Conn.Close()
+		}
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.Tick(time.Second * 2):
+		log.Printf("go-pinger: timed out waiting for connections to close")
 	}
 	close(p.packetChan)
 	p.processWg.Wait()

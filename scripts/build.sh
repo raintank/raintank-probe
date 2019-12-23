@@ -21,4 +21,4 @@ rm -rf $BUILDDIR/*
 
 # Build binary
 cd ../cmd/raintank-probe
-go build -ldflags "-X main.GitHash=$GITVERSION" -o $BUILDDIR/raintank-probe
+go build -mod=vendor -ldflags "-X main.GitHash=$GITVERSION" -o $BUILDDIR/raintank-probe

@@ -40,7 +40,7 @@ github.com/philhofer/fwd
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/raintank/go-pinger v0.0.0-20191223100159-01973d5321e0
+# github.com/raintank/go-pinger v0.0.0-20191223222655-ec2d6f963bab
 github.com/raintank/go-pinger
 # github.com/raintank/metrictank v0.13.1
 github.com/raintank/metrictank/logger

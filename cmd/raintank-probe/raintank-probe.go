@@ -149,6 +149,7 @@ func main() {
 	jobScheduler.Close()
 	publisher.Stop()
 	checks.GlobalPinger.Stop()
+	log.Info("exiting")
 	return
 }
 

@@ -19,7 +19,7 @@ require (
 	github.com/pelletier/go-toml v1.6.0 // indirect
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/prometheus/procfs v0.0.8 // indirect
-	github.com/raintank/go-pinger v0.0.0-20191223100159-01973d5321e0
+	github.com/raintank/go-pinger v0.0.0-20191223222655-ec2d6f963bab
 	github.com/raintank/metrictank v0.13.1
 	github.com/raintank/worldping-api v0.0.0-20171207090352-fb070ccf5fee
 	github.com/rakyll/globalconf v0.0.0-20171201072335-f3ec558991f8
