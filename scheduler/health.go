@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/raintank/raintank-probe/checks"
-	"github.com/raintank/worldping-api/pkg/log"
+	log "github.com/sirupsen/logrus"
 )
 
 // Ping scheduler.HealthHosts to determin if this probe is healthy and should
@@ -21,7 +21,7 @@ func (s *Scheduler) CheckHealth() {
 		settings["hostname"] = host
 		chk, err := checks.NewRaintankPingProbe(settings)
 		if err != nil {
-			log.Fatal(4, "unable to create health check. %s", err)
+			log.Fatalf("unable to create health check. %s", err)
 		}
 		chks[i] = chk
 	}
@@ -39,16 +39,16 @@ func (s *Scheduler) CheckHealth() {
 				defer wg.Done()
 				results, err := chk.Run()
 				if err != nil {
-					log.Warn("Health check to %s failed. %s", chk.Hostname, err)
+					log.Warningf("Health check to %s failed. %s", chk.Hostname, err)
 					ch <- 3
 					return
 				}
 				if results.ErrorMsg() != "" {
-					log.Warn("Health check to %s failed. %s", chk.Hostname, results.ErrorMsg())
+					log.Warningf("Health check to %s failed. %s", chk.Hostname, results.ErrorMsg())
 					ch <- 1
 					return
 				}
-				log.Trace("Health check completed for %s", chk.Hostname)
+				log.Debugf("Health check completed for %s", chk.Hostname)
 				ch <- 0
 			}(resultsCh, check)
 		}
@@ -73,7 +73,7 @@ func (s *Scheduler) CheckHealth() {
 			if newState == 1 {
 				// we are now unhealthy.
 				s.Lock()
-				log.Warn("This probe is in an unhealthy state. Stopping execution of checks.")
+				log.Warning("This probe is in an unhealthy state. Stopping execution of checks.")
 				s.Healthy = false
 				for _, instance := range s.Checks {
 					instance.Stop()
@@ -82,16 +82,15 @@ func (s *Scheduler) CheckHealth() {
 			} else {
 				//we are now healthy.
 				s.Lock()
-				log.Warn("This probe is now healthy again. Resuming execution of checks.")
+				log.Warning("This probe is now healthy again. Resuming execution of checks.")
 				s.Healthy = true
 				for _, instance := range s.Checks {
-					log.Debug("resuming %s check for %s", instance.Check.Type, instance.Check.Slug)
+					log.Debugf("resuming %s check for %s", instance.Check.Type, instance.Check.Slug)
 					instance.Run()
 				}
 				s.Unlock()
 			}
 			lastState = newState
 		}
-
 	}
 }

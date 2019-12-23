@@ -3,7 +3,6 @@ package publisher
 import (
 	"bytes"
 	"crypto/tls"
-	"hash/fnv"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -13,11 +12,11 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
+	"github.com/grafana/metrictank/schema"
+	"github.com/grafana/metrictank/schema/msg"
 	eventMsg "github.com/grafana/worldping-gw/msg"
 	"github.com/jpillora/backoff"
-	"github.com/raintank/worldping-api/pkg/log"
-	"gopkg.in/raintank/schema.v1"
-	"gopkg.in/raintank/schema.v1/msg"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -117,7 +116,7 @@ func (t *Tsdb) run() {
 		go t.flushEvents()
 	}
 
-	flushMetrics := func(shard int) {
+	flushMetrics := func(shard int32) {
 		if len(metrics[shard]) == 0 {
 			return
 		}
@@ -142,25 +141,21 @@ func (t *Tsdb) run() {
 		events = events[:0]
 	}
 
-	hasher := fnv.New32a()
-
 	ticker := time.NewTicker(maxFlushWait)
-	var buf []byte
 	for {
 		select {
 		case md := <-t.metricsIn:
-			//re-use our []byte slice to save an allocation.
-			buf = md.KeyBySeries(buf[:0])
-			hasher.Reset()
-			hasher.Write(buf)
-			shard := int(hasher.Sum32() % uint32(t.concurrency))
+			shard, err := md.PartitionID(schema.PartitionBySeries, int32(t.concurrency))
+			if err != nil {
+				panic(err)
+			}
 			metrics[shard] = append(metrics[shard], md)
 			if len(metrics[shard]) == maxMetricsPerFlush {
 				flushMetrics(shard)
 			}
 		case <-ticker.C:
 			for shard := 0; shard < t.concurrency; shard++ {
-				flushMetrics(shard)
+				flushMetrics(int32(shard))
 			}
 			flushEvents()
 		case event := <-t.eventsIn:
@@ -170,7 +165,7 @@ func (t *Tsdb) run() {
 			}
 		case <-t.shutdown:
 			for shard := 0; shard < t.concurrency; shard++ {
-				flushMetrics(shard)
+				flushMetrics(int32(shard))
 				close(t.metricsWriteQueues[shard])
 			}
 			flushEvents()
@@ -224,18 +219,18 @@ func (t *Tsdb) flushMetrics(shard int) {
 			diff := time.Since(pre)
 			if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				b.Reset()
-				log.Debug("GrafanaNet sent metrics in %s -msg size %d", diff, bodyLen)
+				log.Debugf("GrafanaNet sent metrics in %s -msg size %d", diff, bodyLen)
 				resp.Body.Close()
 				ioutil.ReadAll(resp.Body)
 				break
 			}
 			dur := b.Duration()
 			if err != nil {
-				log.Warn("GrafanaNet failed to submit metrics: %s will try again in %s (this attempt took %s)", err, dur, diff)
+				log.Warningf("GrafanaNet failed to submit metrics: %s will try again in %s (this attempt took %s)", err, dur, diff)
 			} else {
 				buf := make([]byte, 300)
 				n, _ := resp.Body.Read(buf)
-				log.Warn("GrafanaNet failed to submit metrics: http %d - %s will try again in %s (this attempt took %s)", resp.StatusCode, buf[:n], dur, diff)
+				log.Warningf("GrafanaNet failed to submit metrics: http %d - %s will try again in %s (this attempt took %s)", resp.StatusCode, buf[:n], dur, diff)
 				resp.Body.Close()
 			}
 
@@ -272,18 +267,18 @@ func (t *Tsdb) flushEvents() {
 			diff := time.Since(pre)
 			if err == nil && resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				b.Reset()
-				log.Debug("GrafanaNet sent event in %s -msg size %d", diff, bodyLen)
+				log.Debugf("GrafanaNet sent event in %s -msg size %d", diff, bodyLen)
 				resp.Body.Close()
 				ioutil.ReadAll(resp.Body)
 				break
 			}
 			dur := b.Duration()
 			if err != nil {
-				log.Warn("GrafanaNet failed to submit event: %s will try again in %s (this attempt took %s)", err, dur, diff)
+				log.Warningf("GrafanaNet failed to submit event: %s will try again in %s (this attempt took %s)", err, dur, diff)
 			} else {
 				buf := make([]byte, 300)
 				n, _ := resp.Body.Read(buf)
-				log.Warn("GrafanaNet failed to submit event: http %d - %s will try again in %s (this attempt took %s)", resp.StatusCode, buf[:n], dur, diff)
+				log.Warningf("GrafanaNet failed to submit event: http %d - %s will try again in %s (this attempt took %s)", resp.StatusCode, buf[:n], dur, diff)
 				resp.Body.Close()
 			}
 

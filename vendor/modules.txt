@@ -1,0 +1,62 @@
+# github.com/cespare/xxhash v1.1.0
+github.com/cespare/xxhash
+# github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
+github.com/dgryski/go-jump
+# github.com/glacjay/goini v0.0.0-20161120062552-fd3024d87ee2
+github.com/glacjay/goini
+# github.com/golang/snappy v0.0.0-20170215233205-553a64147049
+github.com/golang/snappy
+# github.com/gorilla/websocket v0.0.0-20171210035353-cdedf21e585d
+github.com/gorilla/websocket
+# github.com/grafana/grafana v6.1.6+incompatible
+github.com/grafana/grafana/pkg/util
+# github.com/grafana/metrictank v0.13.1
+github.com/grafana/metrictank/schema
+github.com/grafana/metrictank/schema/msg
+github.com/grafana/metrictank/util
+# github.com/grafana/worldping-gw v0.0.0-20171123145311-b9efdc6e1766
+github.com/grafana/worldping-gw/msg
+# github.com/gsocket-io/golang-socketio v0.0.0-20180813042052-054c23d7455a
+github.com/gsocket-io/golang-socketio
+github.com/gsocket-io/golang-socketio/transport
+github.com/gsocket-io/golang-socketio/protocol
+# github.com/jpillora/backoff v0.0.0-20170918002102-8eab2debe79d
+github.com/jpillora/backoff
+# github.com/konsorten/go-windows-terminal-sequences v1.0.1
+github.com/konsorten/go-windows-terminal-sequences
+# github.com/miekg/dns v0.0.0-20171207171220-3bbde607ac21
+github.com/miekg/dns
+# github.com/pelletier/go-toml v1.6.0
+github.com/pelletier/go-toml
+# github.com/philhofer/fwd v1.0.0
+github.com/philhofer/fwd
+# github.com/raintank/go-pinger v0.0.0-20191223100159-01973d5321e0
+github.com/raintank/go-pinger
+# github.com/raintank/metrictank v0.13.1
+github.com/raintank/metrictank/logger
+# github.com/raintank/worldping-api v0.0.0-20171207090352-fb070ccf5fee
+github.com/raintank/worldping-api/pkg/models
+github.com/raintank/worldping-api/pkg/setting
+github.com/raintank/worldping-api/pkg/log
+# github.com/rakyll/globalconf v0.0.0-20171201072335-f3ec558991f8
+github.com/rakyll/globalconf
+# github.com/sirupsen/logrus v1.4.2
+github.com/sirupsen/logrus
+# github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
+github.com/teris-io/shortid
+# github.com/tinylib/msgp v0.0.0-20171210180219-5bb5e1aed7ba
+github.com/tinylib/msgp/msgp
+# golang.org/x/crypto v0.0.0-20191219195013-becbf705a915
+golang.org/x/crypto/ed25519
+golang.org/x/crypto/ed25519/internal/edwards25519
+# golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
+golang.org/x/net/ipv4
+golang.org/x/net/ipv6
+golang.org/x/net/icmp
+golang.org/x/net/bpf
+golang.org/x/net/internal/iana
+golang.org/x/net/internal/socket
+# golang.org/x/sys v0.0.0-20190422165155-953cdadca894
+golang.org/x/sys/unix
+# gopkg.in/ini.v1 v1.51.0
+gopkg.in/ini.v1

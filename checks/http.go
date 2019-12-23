@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/metrictank/schema"
 	"github.com/raintank/raintank-probe/probe"
-	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v1"
+	log "github.com/sirupsen/logrus"
 )
 
 // HTTPResult struct
@@ -47,7 +47,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.dns", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.dns", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -60,7 +59,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.connect", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.connect", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -73,7 +71,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.send", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.send", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -86,7 +83,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.wait", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.wait", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -99,7 +95,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.recv", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.recv", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -112,7 +107,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.total", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.total", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -123,7 +117,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.default", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.default", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -136,7 +129,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.throughput", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.throughput", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "B/s",
 			Mtype:    "rate",
@@ -149,7 +141,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.dataLength", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.dataLength", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "B",
 			Mtype:    "gauge",
@@ -162,7 +153,6 @@ func (r *HTTPResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.http.statusCode", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.http.statusCode", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "",
 			Mtype:    "gauge",
@@ -592,7 +582,7 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 		switch inverse {
 		case true:
 			if rgx.MatchString(decodedBody) {
-				log.Debug("expectRegex %s unexpectedly matched returned body %s", p.ExpectRegex, decodedBody)
+				log.Debugf("expectRegex %s unexpectedly matched returned body %s", p.ExpectRegex, decodedBody)
 
 				msg := "expectRegex unexpectedly matched"
 				result.Error = &msg
@@ -600,7 +590,7 @@ func (p *RaintankProbeHTTP) Run() (CheckResult, error) {
 			}
 		case false:
 			if !rgx.MatchString(decodedBody) {
-				log.Debug("expectRegex %s did not match returned body %s", p.ExpectRegex, decodedBody)
+				log.Debugf("expectRegex %s did not match returned body %s", p.ExpectRegex, decodedBody)
 
 				msg := "expectRegex did not match"
 				result.Error = &msg

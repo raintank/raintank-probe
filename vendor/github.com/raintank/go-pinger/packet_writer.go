@@ -43,6 +43,7 @@ func (p *Pinger) Send(req *EchoRequest) error {
 	if err != nil {
 		return err
 	}
+	req.Sent = time.Now()
 	if req.Destination.To4() == nil {
 		_, err = p.v6Conn.WriteTo(b, &net.IPAddr{IP: req.Destination})
 		if err != nil {
@@ -54,6 +55,5 @@ func (p *Pinger) Send(req *EchoRequest) error {
 			return err
 		}
 	}
-	req.Sent = time.Now()
 	return nil
 }
