@@ -1,7 +1,6 @@
 version: 2
 jobs:
   build:
-    working_directory: /go/src/github.com/raintank/raintank-probe
     docker:
       - image: circleci/golang:1.13.5
     steps:
@@ -15,7 +14,6 @@ jobs:
             - build
 
   test:
-    working_directory: /go/src/github.com/raintank/raintank-probe
     docker:
       - image: circleci/golang:1.13.5
     steps:
