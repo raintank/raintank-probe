@@ -107,7 +107,7 @@ func main() {
 
 	tsdbUrl, err := url.Parse(*tsdbAddr)
 	if err != nil {
-		log.Fatal("unable to parse tsdb-url: %s", err)
+		log.Fatalf("unable to parse tsdb-url: %s", err)
 	}
 	if !strings.HasPrefix(tsdbUrl.Path, "/") {
 		tsdbUrl.Path += "/"

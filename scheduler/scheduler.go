@@ -120,7 +120,7 @@ func (c *CheckInstance) run(t time.Time) {
 	results, err := exec.Run()
 	var metrics []*schema.MetricData
 	if err != nil {
-		log.Errorf("Failed to execute %s", desc, err)
+		log.Errorf("Failed to execute %s: %s", desc, err)
 		return
 	}
 	metrics = results.Metrics(t, check)
@@ -267,7 +267,7 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 				log.Infof("syncing update to checkId=%d", c.Id)
 				err := existing.Update(c, s.Healthy)
 				if err != nil {
-					log.Errorf("Unable to update check instance for checkId=%d", c.Id, err)
+					log.Errorf("Unable to update check instance for checkId=%d. %s", c.Id, err)
 					existing.Delete()
 					delete(s.Checks, c.Id)
 				}
@@ -276,7 +276,7 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 			log.Debugf("new check definition found for checkId=%d.", c.Id)
 			instance, err := NewCheckInstance(c, s.Healthy)
 			if err != nil {
-				log.Errorf("Unabled to create new check instance for checkId=%d.", c.Id, err)
+				log.Errorf("Unabled to create new check instance for checkId=%d. %s", c.Id, err)
 			} else {
 				s.Checks[c.Id] = instance
 			}
@@ -298,13 +298,13 @@ func (s *Scheduler) Create(check *m.CheckWithSlug) {
 	log.Infof("creating %s check for %s", check.Type, check.Slug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; ok {
-		log.Warn("received create event for check that is already running. checkId=%d", check.Id)
+		log.Warningf("received create event for check that is already running. checkId=%d", check.Id)
 		existing.Delete()
 		delete(s.Checks, check.Id)
 	}
 	instance, err := NewCheckInstance(check, s.Healthy)
 	if err != nil {
-		log.Error(3, "Unabled to create new check instance for checkId=%d.", check.Id, err)
+		log.Errorf("Unabled to create new check instance for checkId=%d. %s", check.Id, err)
 	} else {
 		s.Checks[check.Id] = instance
 	}
@@ -327,7 +327,7 @@ func (s *Scheduler) Update(check *m.CheckWithSlug) {
 	} else {
 		err := existing.Update(check, s.Healthy)
 		if err != nil {
-			log.Errorf("Unable to update check instance for checkId=%d, %s", check.Id, err)
+			log.Errorf("Unable to update check instance for checkId=%d. %s", check.Id, err)
 			existing.Delete()
 			delete(s.Checks, check.Id)
 		}
