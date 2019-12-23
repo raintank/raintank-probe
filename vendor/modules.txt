@@ -1,4 +1,4 @@
-# github.com/cespare/xxhash v1.1.0
+# github.com/cespare/xxhash v1.1.1-0.20190104011926-30d0e5bcb75d
 github.com/cespare/xxhash
 # github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
 github.com/dgryski/go-jump
@@ -16,7 +16,7 @@ github.com/grafana/metrictank/schema/msg
 github.com/grafana/metrictank/util
 # github.com/grafana/worldping-gw v0.0.0-20171123145311-b9efdc6e1766
 github.com/grafana/worldping-gw/msg
-# github.com/gsocket-io/golang-socketio v0.0.0-20180813042052-054c23d7455a
+# github.com/gsocket-io/golang-socketio v0.0.0-20180807071506-7dadaebba222
 github.com/gsocket-io/golang-socketio
 github.com/gsocket-io/golang-socketio/transport
 github.com/gsocket-io/golang-socketio/protocol
@@ -44,7 +44,7 @@ github.com/rakyll/globalconf
 github.com/sirupsen/logrus
 # github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 github.com/teris-io/shortid
-# github.com/tinylib/msgp v0.0.0-20171210180219-5bb5e1aed7ba
+# github.com/tinylib/msgp v1.1.0
 github.com/tinylib/msgp/msgp
 # golang.org/x/crypto v0.0.0-20191219195013-becbf705a915
 golang.org/x/crypto/ed25519

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	upgradeFailed = "Upgrade failed: "
+	upgradeFailed     = "Upgrade failed: "
 
 	WsDefaultPingInterval   = 30 * time.Second
 	WsDefaultPingTimeout    = 60 * time.Second
@@ -86,7 +86,6 @@ type WebsocketTransport struct {
 	PingTimeout    time.Duration
 	ReceiveTimeout time.Duration
 	SendTimeout    time.Duration
-	Dialer         *websocket.Dialer
 
 	BufferSize int
 
@@ -94,10 +93,8 @@ type WebsocketTransport struct {
 }
 
 func (wst *WebsocketTransport) Connect(url string) (conn Connection, err error) {
-	if wst.Dialer == nil {
-		wst.Dialer = websocket.DefaultDialer
-	}
-	socket, _, err := wst.Dialer.Dial(url, wst.RequestHeader)
+	dialer := websocket.Dialer{}
+	socket, _, err := dialer.Dial(url, wst.RequestHeader)
 	if err != nil {
 		return nil, err
 	}

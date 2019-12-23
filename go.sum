@@ -24,8 +24,6 @@ github.com/grafana/metrictank v0.13.1 h1:2b/6PkbVLSg6ZQr3CShSDANwsNz64kDq3fcPF58
 github.com/grafana/metrictank v0.13.1/go.mod h1:+W7kcYMB3XFMCQdmZSrXvqb8KCE84tQMaijapcRbptE=
 github.com/grafana/worldping-gw v0.0.0-20171123145311-b9efdc6e1766 h1:4kkN6cTsa0q7reyKGlspfBcFQVarltJVB8Qts/VGlaA=
 github.com/grafana/worldping-gw v0.0.0-20171123145311-b9efdc6e1766/go.mod h1:aZgNW+Gz3PK7YrOvKrB4jSAQ8dG5W9WnjaVBmy+M1t0=
-github.com/gsocket-io/golang-socketio v0.0.0-20180813042052-054c23d7455a h1:mS6jhRuvOJ+1ZwblbHWB5lnxErYTs2WxbbtDxHHrgts=
-github.com/gsocket-io/golang-socketio v0.0.0-20180813042052-054c23d7455a/go.mod h1:8rBSDYVzPWKmwscNLbML0doyn2/JtDe3bIfoQj8qfvw=
 github.com/jpillora/backoff v0.0.0-20170918002102-8eab2debe79d h1:ix3WmphUvN0GDd0DO9MH0v6/5xTv+Xm1bPN+1UJn58k=
 github.com/jpillora/backoff v0.0.0-20170918002102-8eab2debe79d/go.mod h1:2iMrUgbbvHEiQClaW2NsSzMyGHqN+rDFqY705q49KG0=
 github.com/jtolds/gls v4.20.0+incompatible h1:xdiiI2gbIgH/gLH7ADydsJ1uDOEzR8yvV7C0MuV77Wo=
@@ -63,6 +61,8 @@ github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf h1:Z2X3Os7oRzpdJ7
 github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf/go.mod h1:M8agBzgqHIhgj7wEn9/0hJUZcrvt9VY+Ln+S1I5Mha0=
 github.com/tinylib/msgp v1.1.0 h1:9fQd+ICuRIu/ue4vxJZu6/LzxN0HwMds2nq/0cFvxHU=
 github.com/tinylib/msgp v1.1.0/go.mod h1:+d+yLhGm8mzTaHzB+wgMYrodPfmZrzkirds8fDWklFE=
+github.com/woodsaj/golang-socketio v0.0.0-20180813042052-054c23d7455a h1:pJsAAIZMqePSSeWtINck+M00+u2vLRJmRmrRSrg/M1c=
+github.com/woodsaj/golang-socketio v0.0.0-20180813042052-054c23d7455a/go.mod h1:olfGR7FwX7s90WgwI3vnkKig+XAUCrY1nWzHK40xx0M=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191219195013-becbf705a915 h1:aJ0ex187qoXrJHPo8ZasVTASQB7llQP6YeNzgDALPRk=
 golang.org/x/crypto v0.0.0-20191219195013-becbf705a915/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=

@@ -28,3 +28,5 @@ require (
 	golang.org/x/crypto v0.0.0-20191219195013-becbf705a915 // indirect
 	gopkg.in/ini.v1 v1.51.0 // indirect
 )
+
+replace github.com/gsocket-io/golang-socketio => github.com/woodsaj/golang-socketio v0.0.0-20180813042052-054c23d7455a
