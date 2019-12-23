@@ -4,8 +4,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/grafana/metrictank/stats"
 	"github.com/raintank/raintank-probe/checks"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	schedulerHealth = stats.NewGauge32("scheduler.healthy")
 )
 
 // Ping scheduler.HealthHosts to determin if this probe is healthy and should
@@ -25,7 +30,7 @@ func (s *Scheduler) CheckHealth() {
 		}
 		chks[i] = chk
 	}
-
+	schedulerHealth.Set(0)
 	lastState := 1
 
 	ticker := time.NewTicker(time.Second * 5)
@@ -72,6 +77,7 @@ func (s *Scheduler) CheckHealth() {
 		if newState != lastState {
 			if newState == 1 {
 				// we are now unhealthy.
+				schedulerHealth.Set(0)
 				s.Lock()
 				log.Warning("This probe is in an unhealthy state. Stopping execution of checks.")
 				s.Healthy = false
@@ -81,6 +87,7 @@ func (s *Scheduler) CheckHealth() {
 				s.Unlock()
 			} else {
 				//we are now healthy.
+				schedulerHealth.Set(1)
 				s.Lock()
 				log.Warning("This probe is now healthy again. Resuming execution of checks.")
 				s.Healthy = true

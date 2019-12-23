@@ -7,12 +7,21 @@ import (
 	"time"
 
 	"github.com/grafana/metrictank/schema"
+	"github.com/grafana/metrictank/stats"
 	eventMsg "github.com/grafana/worldping-gw/msg"
 	"github.com/raintank/raintank-probe/checks"
 	"github.com/raintank/raintank-probe/probe"
 	"github.com/raintank/raintank-probe/publisher"
 	m "github.com/raintank/worldping-api/pkg/models"
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	schedulerCheckDelay    = stats.NewMeter32("scheduler.checks.delay", true)
+	schedulerChecksOK      = stats.NewCounterRate32("scheduler.checks.result.ok")
+	schedulerChecksError   = stats.NewCounterRate32("scheduler.checks.result.error")
+	schedulerChecksSkipped = stats.NewCounterRate32("scheduler.checks.skipped")
+	schedulerChecksRunning = stats.NewGauge32("scheduler.checks.running")
 )
 
 type RaintankProbeCheck interface {
@@ -100,10 +109,12 @@ func (c *CheckInstance) run(t time.Time) {
 	c.Lock()
 	desc := fmt.Sprintf("%s check for %s", c.Check.Type, c.Check.Slug)
 	delta := time.Since(t)
+	schedulerCheckDelay.Value(int(delta.Nanoseconds() / int64(time.Millisecond)))
 	if delta > (100 * time.Millisecond) {
 		log.Warningf("%s check for %s is running late by %d milliseconds", c.Check.Type, c.Check.Slug, delta/time.Millisecond)
 	}
 	if (delta / time.Second) > time.Duration(c.Check.Frequency) {
+		schedulerChecksSkipped.Inc()
 		log.Errorf("execution run of %s skipped due to being too old.", desc)
 		c.Unlock()
 		return
@@ -181,8 +192,10 @@ func (c *CheckInstance) run(t time.Time) {
 	okState := 0.0
 	errState := 0.0
 	if c.State == m.EvalResultCrit {
+		schedulerChecksError.Inc()
 		errState = 1
 	} else {
+		schedulerChecksOK.Inc()
 		okState = 1
 	}
 	metrics = append(metrics, &schema.MetricData{
@@ -270,6 +283,7 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 					log.Errorf("Unable to update check instance for checkId=%d. %s", c.Id, err)
 					existing.Delete()
 					delete(s.Checks, c.Id)
+					schedulerChecksRunning.Dec()
 				}
 			}
 		} else {
@@ -279,6 +293,7 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 				log.Errorf("Unabled to create new check instance for checkId=%d. %s", c.Id, err)
 			} else {
 				s.Checks[c.Id] = instance
+				schedulerChecksRunning.Inc()
 			}
 		}
 	}
@@ -287,6 +302,7 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 			log.Infof("checkId=%d no longer scheduled to this probe, removing it.", id)
 			instance.Delete()
 			delete(s.Checks, id)
+			schedulerChecksRunning.Dec()
 		}
 	}
 	s.Unlock()
@@ -301,12 +317,14 @@ func (s *Scheduler) Create(check *m.CheckWithSlug) {
 		log.Warningf("received create event for check that is already running. checkId=%d", check.Id)
 		existing.Delete()
 		delete(s.Checks, check.Id)
+		schedulerChecksRunning.Dec()
 	}
 	instance, err := NewCheckInstance(check, s.Healthy)
 	if err != nil {
 		log.Errorf("Unabled to create new check instance for checkId=%d. %s", check.Id, err)
 	} else {
 		s.Checks[check.Id] = instance
+		schedulerChecksRunning.Inc()
 	}
 	s.Unlock()
 	return
@@ -322,6 +340,7 @@ func (s *Scheduler) Update(check *m.CheckWithSlug) {
 			log.Errorf("Unabled to create new check instance for checkId=%d. %s", check.Id, err)
 		} else {
 			s.Checks[check.Id] = instance
+			schedulerChecksRunning.Inc()
 		}
 
 	} else {
@@ -330,6 +349,7 @@ func (s *Scheduler) Update(check *m.CheckWithSlug) {
 			log.Errorf("Unable to update check instance for checkId=%d. %s", check.Id, err)
 			existing.Delete()
 			delete(s.Checks, check.Id)
+			schedulerChecksRunning.Dec()
 		}
 	}
 	s.Unlock()
@@ -344,6 +364,7 @@ func (s *Scheduler) Remove(check *m.CheckWithSlug) {
 	} else {
 		existing.Delete()
 		delete(s.Checks, check.Id)
+		schedulerChecksRunning.Dec()
 	}
 	s.Unlock()
 	return

@@ -16,17 +16,17 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/grafana/metrictank/stats"
 	gosocketio "github.com/gsocket-io/golang-socketio"
 	"github.com/gsocket-io/golang-socketio/transport"
 	"github.com/raintank/metrictank/logger"
-	m "github.com/raintank/worldping-api/pkg/models"
-	"github.com/rakyll/globalconf"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/raintank/raintank-probe/checks"
 	"github.com/raintank/raintank-probe/probe"
 	"github.com/raintank/raintank-probe/publisher"
 	"github.com/raintank/raintank-probe/scheduler"
+	m "github.com/raintank/worldping-api/pkg/models"
+	"github.com/rakyll/globalconf"
+	log "github.com/sirupsen/logrus"
 )
 
 const Version int = 1
@@ -44,12 +44,23 @@ var (
 	concurrency = flag.Int("concurrency", 5, "concurrency number of requests to TSDB.")
 	healthHosts = flag.String("health-hosts", "google.com,youtube.com,facebook.com,twitter.com,wikipedia.com", "comma separted list of hosts to ping to determin network health of this probe.")
 
+	statsEnabled    = flag.Bool("stats-enabled", false, "enable sending graphite messages for instrumentation")
+	statsPrefix     = flag.String("stats-prefix", "raintank-probe.stats.$hostname", "stats prefix (will add trailing dot automatically if needed)")
+	statsAddr       = flag.String("stats-addr", "localhost:2003", "graphite address")
+	statsInterval   = flag.Int("stats-interval", 10, "interval in seconds to send statistics")
+	statsBufferSize = flag.Int("stats-buffer-size", 20000, "how many messages (holding all measurements from one interval) to buffer up in case graphite endpoint is unavailable.")
+	statsTimeout    = flag.Duration("stats-timeout", time.Second*10, "timeout after which a write is considered not successful")
+
 	// healthz endpoint
 	healthzListenAddr = flag.String("healthz-listen-addr", "localhost:7180", "address to listen on for healthz http api.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
 
 	wsTransport = transport.GetDefaultWebsocketTransport()
+
+	// metrics
+	controllerConnected = stats.NewGauge32("controller.connected")
+	eventsReceived      = stats.NewCounterRate32("handlers.events.received")
 )
 
 func main() {
@@ -79,6 +90,15 @@ func main() {
 	if *showVersion {
 		fmt.Printf("raintank-probe (built with %s, git hash %s)\n", runtime.Version(), GitHash)
 		return
+	}
+
+	if *statsEnabled {
+		stats.NewMemoryReporter()
+		hostname, _ := os.Hostname()
+		prefix := strings.Replace(*statsPrefix, "$hostname", strings.Replace(hostname, ".", "_", -1), -1)
+		stats.NewGraphite(prefix, *statsAddr, *statsInterval, *statsBufferSize, *statsTimeout)
+	} else {
+		stats.NewDevnull()
 	}
 
 	if *nodeName == "" {
@@ -135,6 +155,7 @@ func main() {
 func connectController(controllerUrl *url.URL, jobScheduler *scheduler.Scheduler, interrupt chan os.Signal, failOncConnect bool) {
 	log.Infof("attempting to connect to controller at %s", controllerUrl.Hostname())
 	connected := false
+	controllerConnected.Set(0)
 	var client *gosocketio.Client
 	var err error
 	eventChan := make(chan string, 2)
@@ -151,6 +172,7 @@ func connectController(controllerUrl *url.URL, jobScheduler *scheduler.Scheduler
 			}
 		} else {
 			connected = true
+			controllerConnected.Set(1)
 			log.Info("Connected to controller")
 			bindHandlers(client, controllerUrl, jobScheduler, interrupt, eventChan)
 		}
@@ -198,24 +220,30 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 		return
 	}
 	client.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
+		eventsReceived.Inc()
 		log.Error("Disconnected from controller.")
 		eventChan <- "disconnected"
 	})
 	client.On("refresh", func(c *gosocketio.Channel, checks []*m.CheckWithSlug) {
+		eventsReceived.Inc()
 		eventChan <- "refresh"
 		jobScheduler.Refresh(checks)
 	})
 	client.On("created", func(c *gosocketio.Channel, check m.CheckWithSlug) {
+		eventsReceived.Inc()
 		jobScheduler.Create(&check)
 	})
 	client.On("updated", func(c *gosocketio.Channel, check m.CheckWithSlug) {
+		eventsReceived.Inc()
 		jobScheduler.Update(&check)
 	})
 	client.On("removed", func(c *gosocketio.Channel, check m.CheckWithSlug) {
+		eventsReceived.Inc()
 		jobScheduler.Remove(&check)
 	})
 
 	client.On("ready", func(c *gosocketio.Channel, event m.ProbeReadyPayload) {
+		eventsReceived.Inc()
 		log.Infof("server sent ready event. ProbeId=%d", event.Collector.Id)
 		probe.Self = event.Collector
 
@@ -225,6 +253,7 @@ func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobSchedule
 
 	})
 	client.On("error", func(c *gosocketio.Channel, reason string) {
+		eventsReceived.Inc()
 		log.Errorf("Controller emitted an error. %s", reason)
 		close(interrupt)
 	})

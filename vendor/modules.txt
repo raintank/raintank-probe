@@ -1,7 +1,12 @@
+# github.com/Dieterbe/artisanalhistogram v0.0.0-20170619072513-f61b7225d304
+github.com/Dieterbe/artisanalhistogram/hist12h
+github.com/Dieterbe/artisanalhistogram/hist15s
 # github.com/cespare/xxhash v1.1.1-0.20190104011926-30d0e5bcb75d
 github.com/cespare/xxhash
 # github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57
 github.com/dgryski/go-jump
+# github.com/dgryski/go-linlog v0.0.0-20180207191225-edcf2dfd90ff
+github.com/dgryski/go-linlog
 # github.com/glacjay/goini v0.0.0-20161120062552-fd3024d87ee2
 github.com/glacjay/goini
 # github.com/golang/snappy v0.0.0-20170215233205-553a64147049
@@ -12,6 +17,7 @@ github.com/gorilla/websocket
 github.com/grafana/grafana/pkg/util
 # github.com/grafana/metrictank v0.13.1
 github.com/grafana/metrictank/schema
+github.com/grafana/metrictank/stats
 github.com/grafana/metrictank/schema/msg
 github.com/grafana/metrictank/util
 # github.com/grafana/worldping-gw v0.0.0-20171123145311-b9efdc6e1766
@@ -30,6 +36,10 @@ github.com/miekg/dns
 github.com/pelletier/go-toml
 # github.com/philhofer/fwd v1.0.0
 github.com/philhofer/fwd
+# github.com/prometheus/procfs v0.0.8
+github.com/prometheus/procfs
+github.com/prometheus/procfs/internal/fs
+github.com/prometheus/procfs/internal/util
 # github.com/raintank/go-pinger v0.0.0-20191223100159-01973d5321e0
 github.com/raintank/go-pinger
 # github.com/raintank/metrictank v0.13.1

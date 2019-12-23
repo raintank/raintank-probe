@@ -14,6 +14,7 @@ import (
 	"github.com/golang/snappy"
 	"github.com/grafana/metrictank/schema"
 	"github.com/grafana/metrictank/schema/msg"
+	"github.com/grafana/metrictank/stats"
 	eventMsg "github.com/grafana/worldping-gw/msg"
 	"github.com/jpillora/backoff"
 	log "github.com/sirupsen/logrus"
@@ -24,6 +25,9 @@ var (
 	maxMetricsPerFlush = 10000
 	maxEventsPerFlush  = 10000
 	maxFlushWait       = time.Millisecond * 500
+
+	publisherEventsSent  = stats.NewCounterRate32("publisher.events.sent")
+	publisherMetricsSent = stats.NewCounterRate32("publisher.metrics.sent")
 )
 
 func Init(u *url.URL, apiKey string, concurrency int) {
@@ -126,6 +130,7 @@ func (t *Tsdb) run() {
 			panic(err)
 		}
 		t.metricsWriteQueues[shard] <- data
+		publisherMetricsSent.Add(len(metrics[shard]))
 		metrics[shard] = metrics[shard][:0]
 	}
 
@@ -138,6 +143,7 @@ func (t *Tsdb) run() {
 			panic(err)
 		}
 		t.eventsWriteQueue <- data
+		publisherEventsSent.Add(len(events))
 		events = events[:0]
 	}
 

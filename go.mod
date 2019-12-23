@@ -3,11 +3,12 @@ module github.com/raintank/raintank-probe
 go 1.12
 
 require (
+	github.com/Dieterbe/artisanalhistogram v0.0.0-20170619072513-f61b7225d304 // indirect
 	github.com/cespare/xxhash v1.1.1-0.20190104011926-30d0e5bcb75d // indirect
 	github.com/dgryski/go-jump v0.0.0-20170409065014-e1f439676b57 // indirect
+	github.com/dgryski/go-linlog v0.0.0-20180207191225-edcf2dfd90ff // indirect
 	github.com/glacjay/goini v0.0.0-20161120062552-fd3024d87ee2 // indirect
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
-	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/gorilla/websocket v0.0.0-20171210035353-cdedf21e585d
 	github.com/grafana/grafana v6.1.6+incompatible // indirect
 	github.com/grafana/metrictank v0.13.1
@@ -17,6 +18,7 @@ require (
 	github.com/miekg/dns v0.0.0-20171207171220-3bbde607ac21
 	github.com/pelletier/go-toml v1.6.0 // indirect
 	github.com/philhofer/fwd v1.0.0 // indirect
+	github.com/prometheus/procfs v0.0.8 // indirect
 	github.com/raintank/go-pinger v0.0.0-20191223100159-01973d5321e0
 	github.com/raintank/metrictank v0.13.1
 	github.com/raintank/worldping-api v0.0.0-20171207090352-fb070ccf5fee
