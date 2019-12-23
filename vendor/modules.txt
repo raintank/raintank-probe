@@ -16,7 +16,7 @@ github.com/grafana/metrictank/schema/msg
 github.com/grafana/metrictank/util
 # github.com/grafana/worldping-gw v0.0.0-20171123145311-b9efdc6e1766
 github.com/grafana/worldping-gw/msg
-# github.com/gsocket-io/golang-socketio v0.0.0-20180807071506-7dadaebba222
+# github.com/gsocket-io/golang-socketio v0.0.0-20180813042052-054c23d7455a => github.com/woodsaj/golang-socketio v0.0.0-20180813042052-054c23d7455a
 github.com/gsocket-io/golang-socketio
 github.com/gsocket-io/golang-socketio/transport
 github.com/gsocket-io/golang-socketio/protocol
