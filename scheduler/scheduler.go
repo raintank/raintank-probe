@@ -6,13 +6,22 @@ import (
 	"sync"
 	"time"
 
+	"github.com/grafana/metrictank/schema"
+	"github.com/grafana/metrictank/stats"
 	eventMsg "github.com/grafana/worldping-gw/msg"
 	"github.com/raintank/raintank-probe/checks"
 	"github.com/raintank/raintank-probe/probe"
 	"github.com/raintank/raintank-probe/publisher"
-	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v1"
+	log "github.com/sirupsen/logrus"
+)
+
+var (
+	schedulerCheckDelay    = stats.NewMeter32("scheduler.checks.delay", true)
+	schedulerChecksOK      = stats.NewCounterRate32("scheduler.checks.result.ok")
+	schedulerChecksError   = stats.NewCounterRate32("scheduler.checks.result.error")
+	schedulerChecksSkipped = stats.NewCounterRate32("scheduler.checks.skipped")
+	schedulerChecksRunning = stats.NewGauge32("scheduler.checks.running")
 )
 
 type RaintankProbeCheck interface {
@@ -31,7 +40,7 @@ type CheckInstance struct {
 }
 
 func NewCheckInstance(c *m.CheckWithSlug, probeHealthy bool) (*CheckInstance, error) {
-	log.Info("Creating new CheckInstance for %s check for %s", c.Type, c.Slug)
+	log.Infof("Creating new CheckInstance for %s check for %s", c.Type, c.Slug)
 	executor, err := GetCheck(c.Type, c.Settings)
 	if err != nil {
 		return nil, err
@@ -50,7 +59,7 @@ func NewCheckInstance(c *m.CheckWithSlug, probeHealthy bool) (*CheckInstance, er
 }
 
 func (i *CheckInstance) Update(c *m.CheckWithSlug, probeHealthy bool) error {
-	log.Info("updating execution thread of %s check for %s", c.Type, c.Slug)
+	log.Infof("updating execution thread of %s check for %s", c.Type, c.Slug)
 	executor, err := GetCheck(c.Type, c.Settings)
 	if err != nil {
 		return err
@@ -65,34 +74,34 @@ func (i *CheckInstance) Update(c *m.CheckWithSlug, probeHealthy bool) error {
 
 func (i *CheckInstance) Stop() {
 	i.RLock()
-	log.Info("pausing execution thread of %s check for %s", i.Check.Type, i.Check.Slug)
+	log.Infof("pausing execution thread of %s check for %s", i.Check.Type, i.Check.Slug)
 	i.RUnlock()
 	i.Ticker.Stop()
 }
 
 func (i *CheckInstance) Delete() {
 	i.RLock()
-	log.Info("stopping execution thread of %s check for %s", i.Check.Type, i.Check.Slug)
+	log.Infof("stopping execution thread of %s check for %s", i.Check.Type, i.Check.Slug)
 	i.RUnlock()
 	i.Ticker.Delete()
 }
 
 func (i *CheckInstance) Run() {
 	i.RLock()
-	log.Info("enabling execution thread of %s check for %s", i.Check.Type, i.Check.Slug)
+	log.Infof("enabling execution thread of %s check for %s", i.Check.Type, i.Check.Slug)
 	i.RUnlock()
 	i.Ticker.Start()
 }
 
 func (c *CheckInstance) loop() {
 	c.RLock()
-	log.Info("Starting execution loop for %s check for %s, Frequency: %d, Offset: %d", c.Check.Type, c.Check.Slug, c.Check.Frequency, c.Check.Offset)
+	log.Infof("Starting execution loop for %s check for %s, Frequency: %d, Offset: %d", c.Check.Type, c.Check.Slug, c.Check.Frequency, c.Check.Offset)
 	c.RUnlock()
 	for t := range c.Ticker.C {
 		c.run(t)
 	}
 	c.RLock()
-	log.Info("execution loop for %s check for %s has ended.", c.Check.Type, c.Check.Slug)
+	log.Infof("execution loop for %s check for %s has ended.", c.Check.Type, c.Check.Slug)
 	c.RUnlock()
 }
 
@@ -100,11 +109,13 @@ func (c *CheckInstance) run(t time.Time) {
 	c.Lock()
 	desc := fmt.Sprintf("%s check for %s", c.Check.Type, c.Check.Slug)
 	delta := time.Since(t)
+	schedulerCheckDelay.Value(int(delta.Nanoseconds() / int64(time.Millisecond)))
 	if delta > (100 * time.Millisecond) {
-		log.Warn("%s check for %s is running late by %d milliseconds", c.Check.Type, c.Check.Slug, delta/time.Millisecond)
+		log.Warningf("%s check for %s is running late by %d milliseconds", c.Check.Type, c.Check.Slug, delta/time.Millisecond)
 	}
 	if (delta / time.Second) > time.Duration(c.Check.Frequency) {
-		log.Error(3, "execution run of %s skipped due to being too old.", desc)
+		schedulerChecksSkipped.Inc()
+		log.Errorf("execution run of %s skipped due to being too old.", desc)
 		c.Unlock()
 		return
 	}
@@ -116,20 +127,20 @@ func (c *CheckInstance) run(t time.Time) {
 	lastError := c.LastError
 	c.Unlock()
 
-	log.Debug("executing %s", desc)
+	log.Debugf("executing %s", desc)
 	results, err := exec.Run()
 	var metrics []*schema.MetricData
 	if err != nil {
-		log.Error(3, "Failed to execute %s", desc, err)
+		log.Errorf("Failed to execute %s: %s", desc, err)
 		return
 	}
 	metrics = results.Metrics(t, check)
-	log.Debug("got %d metrics for %s", len(metrics), desc)
+	log.Debugf("got %d metrics for %s", len(metrics), desc)
 	// check if we need to send any events.  Events are sent on state change, or if the error reason has changed
 	// or the check has been in an error state for 10minutes.
 	newState := m.EvalResultOK
 	if msg := results.ErrorMsg(); msg != "" {
-		log.Debug("%s failed: %s", desc, msg)
+		log.Debugf("%s failed: %s", desc, msg)
 		newState = m.EvalResultCrit
 		if (state != newState) || (msg != lastError) || (time.Since(stateChange) > time.Minute*10) {
 			c.Lock()
@@ -138,7 +149,7 @@ func (c *CheckInstance) run(t time.Time) {
 			c.StateChange = time.Now()
 			c.Unlock()
 			//send Error event.
-			log.Info("%s is in error state", desc)
+			log.Debugf("%s is in error state", desc)
 			event := eventMsg.ProbeEvent{
 				EventType: "monitor_state",
 				OrgId:     check.OrgId,
@@ -160,7 +171,7 @@ func (c *CheckInstance) run(t time.Time) {
 		c.StateChange = time.Now()
 		c.Unlock()
 		//send OK event.
-		log.Info("%s is now in OK state", desc)
+		log.Debugf("%s is now in OK state", desc)
 		event := eventMsg.ProbeEvent{
 			EventType: "monitor_state",
 			OrgId:     check.OrgId,
@@ -181,14 +192,15 @@ func (c *CheckInstance) run(t time.Time) {
 	okState := 0.0
 	errState := 0.0
 	if c.State == m.EvalResultCrit {
+		schedulerChecksError.Inc()
 		errState = 1
 	} else {
+		schedulerChecksOK.Inc()
 		okState = 1
 	}
 	metrics = append(metrics, &schema.MetricData{
 		OrgId:    int(check.OrgId),
 		Name:     fmt.Sprintf("worldping.%s.%s.%s.ok_state", check.Slug, probe.Self.Slug, check.Type),
-		Metric:   fmt.Sprintf("worldping.%s.%s.%s.ok_state", check.Slug, probe.Self.Slug, check.Type),
 		Interval: int(check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
@@ -198,7 +210,6 @@ func (c *CheckInstance) run(t time.Time) {
 	}, &schema.MetricData{
 		OrgId:    int(check.OrgId),
 		Name:     fmt.Sprintf("worldping.%s.%s.%s.error_state", check.Slug, probe.Self.Slug, check.Type),
-		Metric:   fmt.Sprintf("worldping.%s.%s.%s.error_state", check.Slug, probe.Self.Slug, check.Type),
 		Interval: int(check.Frequency),
 		Unit:     "state",
 		Mtype:    "gauge",
@@ -255,7 +266,7 @@ func (s *Scheduler) Close() {
 }
 
 func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
-	log.Info("refreshing checks, there are %d", len(checks))
+	log.Infof("refreshing checks, there are %d", len(checks))
 	seenChecks := make(map[int64]struct{})
 	s.Lock()
 	for _, c := range checks {
@@ -264,31 +275,34 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 		}
 		seenChecks[c.Id] = struct{}{}
 		if existing, ok := s.Checks[c.Id]; ok {
-			log.Debug("checkId=%d already running", c.Id)
+			log.Debugf("checkId=%d already running", c.Id)
 			if c.Updated.After(existing.Check.Updated) {
-				log.Info("syncing update to checkId=%d", c.Id)
+				log.Infof("syncing update to checkId=%d", c.Id)
 				err := existing.Update(c, s.Healthy)
 				if err != nil {
-					log.Error(3, "Unable to update check instance for checkId=%d", c.Id, err)
+					log.Errorf("Unable to update check instance for checkId=%d. %s", c.Id, err)
 					existing.Delete()
 					delete(s.Checks, c.Id)
+					schedulerChecksRunning.Dec()
 				}
 			}
 		} else {
-			log.Debug("new check definition found for checkId=%d.", c.Id)
+			log.Debugf("new check definition found for checkId=%d.", c.Id)
 			instance, err := NewCheckInstance(c, s.Healthy)
 			if err != nil {
-				log.Error(3, "Unabled to create new check instance for checkId=%d.", c.Id, err)
+				log.Errorf("Unabled to create new check instance for checkId=%d. %s", c.Id, err)
 			} else {
 				s.Checks[c.Id] = instance
+				schedulerChecksRunning.Inc()
 			}
 		}
 	}
 	for id, instance := range s.Checks {
 		if _, ok := seenChecks[id]; !ok {
-			log.Info("checkId=%d no longer scheduled to this probe, removing it.", id)
+			log.Infof("checkId=%d no longer scheduled to this probe, removing it.", id)
 			instance.Delete()
 			delete(s.Checks, id)
+			schedulerChecksRunning.Dec()
 		}
 	}
 	s.Unlock()
@@ -297,41 +311,45 @@ func (s *Scheduler) Refresh(checks []*m.CheckWithSlug) {
 }
 
 func (s *Scheduler) Create(check *m.CheckWithSlug) {
-	log.Info("creating %s check for %s", check.Type, check.Slug)
+	log.Infof("creating %s check for %s", check.Type, check.Slug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; ok {
-		log.Warn("recieved create event for check that is already running. checkId=%d", check.Id)
+		log.Warningf("received create event for check that is already running. checkId=%d", check.Id)
 		existing.Delete()
 		delete(s.Checks, check.Id)
+		schedulerChecksRunning.Dec()
 	}
 	instance, err := NewCheckInstance(check, s.Healthy)
 	if err != nil {
-		log.Error(3, "Unabled to create new check instance for checkId=%d.", check.Id, err)
+		log.Errorf("Unabled to create new check instance for checkId=%d. %s", check.Id, err)
 	} else {
 		s.Checks[check.Id] = instance
+		schedulerChecksRunning.Inc()
 	}
 	s.Unlock()
 	return
 }
 
 func (s *Scheduler) Update(check *m.CheckWithSlug) {
-	log.Info("updating %s check for %s", check.Type, check.Slug)
+	log.Infof("updating %s check for %s", check.Type, check.Slug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; !ok {
-		log.Warn("recieved update event for check that is not currently running. checkId=%d", check.Id)
+		log.Warningf("received update event for check that is not currently running. checkId=%d", check.Id)
 		instance, err := NewCheckInstance(check, s.Healthy)
 		if err != nil {
-			log.Error(3, "Unabled to create new check instance for checkId=%d. %s", check.Id, err)
+			log.Errorf("Unabled to create new check instance for checkId=%d. %s", check.Id, err)
 		} else {
 			s.Checks[check.Id] = instance
+			schedulerChecksRunning.Inc()
 		}
 
 	} else {
 		err := existing.Update(check, s.Healthy)
 		if err != nil {
-			log.Error(3, "Unable to update check instance for checkId=%d, %s", check.Id, err)
+			log.Errorf("Unable to update check instance for checkId=%d. %s", check.Id, err)
 			existing.Delete()
 			delete(s.Checks, check.Id)
+			schedulerChecksRunning.Dec()
 		}
 	}
 	s.Unlock()
@@ -339,13 +357,14 @@ func (s *Scheduler) Update(check *m.CheckWithSlug) {
 }
 
 func (s *Scheduler) Remove(check *m.CheckWithSlug) {
-	log.Info("removing %s check for %s", check.Type, check.Slug)
+	log.Infof("removing %s check for %s", check.Type, check.Slug)
 	s.Lock()
 	if existing, ok := s.Checks[check.Id]; !ok {
-		log.Warn("recieved remove event for check that is not currently running. checkId=%d", check.Id)
+		log.Warningf("recieved remove event for check that is not currently running. checkId=%d", check.Id)
 	} else {
 		existing.Delete()
 		delete(s.Checks, check.Id)
+		schedulerChecksRunning.Dec()
 	}
 	s.Unlock()
 	return
@@ -364,5 +383,4 @@ func GetCheck(checkType m.CheckType, settings map[string]interface{}) (RaintankP
 	default:
 		return nil, fmt.Errorf("unknown check type %s ", checkType)
 	}
-
 }

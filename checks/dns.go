@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/metrictank/schema"
 	"github.com/miekg/dns"
 	"github.com/raintank/raintank-probe/probe"
-	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v1"
+	log "github.com/sirupsen/logrus"
 )
 
 // results. we use pointers so that missing data will be
@@ -38,7 +38,6 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.dns.time", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.dns.time", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -49,7 +48,6 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.dns.default", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.dns.default", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -62,7 +60,6 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.dns.ttl", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.dns.ttl", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "s",
 			Mtype:    "gauge",
@@ -75,7 +72,6 @@ func (r *DnsResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metri
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.dns.answers", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.dns.answers", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "",
 			Mtype:    "gauge",
@@ -286,7 +282,7 @@ func (p *RaintankProbeDns) Run() (CheckResult, error) {
 			switch inverse {
 			case true:
 				if rgx.MatchString(b.String()) {
-					log.Debug("expectRegex %s unexpectedly matched Answers %s", p.ExpectRegex, b.String())
+					log.Debugf("expectRegex %s unexpectedly matched Answers %s", p.ExpectRegex, b.String())
 
 					msg := "expectRegex unexpectedly matched"
 					result.Error = &msg
@@ -294,7 +290,7 @@ func (p *RaintankProbeDns) Run() (CheckResult, error) {
 				}
 			case false:
 				if !rgx.MatchString(b.String()) {
-					log.Debug("expectRegex %s did not match Answers %s", p.ExpectRegex, b.String())
+					log.Debugf("expectRegex %s did not match Answers %s", p.ExpectRegex, b.String())
 
 					msg := "expectRegex did not match"
 					result.Error = &msg

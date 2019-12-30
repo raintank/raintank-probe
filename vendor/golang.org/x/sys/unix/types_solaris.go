@@ -5,7 +5,7 @@
 // +build ignore
 
 /*
-Input to cgo -godefs.  See also mkerrors.sh and mkall.sh
+Input to cgo -godefs.  See README.md
 */
 
 // +godefs map struct_in_addr [4]byte /* in_addr */
@@ -15,10 +15,19 @@ package unix
 
 /*
 #define KERNEL
+// These defines ensure that builds done on newer versions of Solaris are
+// backwards-compatible with older versions of Solaris and
+// OpenSolaris-based derivatives.
+#define __USE_SUNOS_SOCKETS__          // msghdr
+#define __USE_LEGACY_PROTOTYPES__      // iovec
 #include <dirent.h>
 #include <fcntl.h>
+#include <netdb.h>
+#include <limits.h>
+#include <poll.h>
 #include <signal.h>
 #include <termios.h>
+#include <termio.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -29,8 +38,11 @@ package unix
 #include <sys/signal.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <sys/time.h>
+#include <sys/times.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <net/bpf.h>
@@ -40,6 +52,8 @@ package unix
 #include <netinet/in.h>
 #include <netinet/icmp6.h>
 #include <netinet/tcp.h>
+#include <ustat.h>
+#include <utime.h>
 
 enum {
 	sizeofPtr = sizeof(void*),
@@ -61,14 +75,16 @@ struct sockaddr_any {
 */
 import "C"
 
-// Machine characteristics; for internal use.
+// Machine characteristics
 
 const (
-	sizeofPtr      = C.sizeofPtr
-	sizeofShort    = C.sizeof_short
-	sizeofInt      = C.sizeof_int
-	sizeofLong     = C.sizeof_long
-	sizeofLongLong = C.sizeof_longlong
+	SizeofPtr      = C.sizeofPtr
+	SizeofShort    = C.sizeof_short
+	SizeofInt      = C.sizeof_int
+	SizeofLong     = C.sizeof_long
+	SizeofLongLong = C.sizeof_longlong
+	PathMax        = C.PATH_MAX
+	MaxHostNameLen = C.MAXHOSTNAMELEN
 )
 
 // Basic types
@@ -88,6 +104,10 @@ type Timeval C.struct_timeval
 
 type Timeval32 C.struct_timeval32
 
+type Tms C.struct_tms
+
+type Utimbuf C.struct_utimbuf
+
 // Processes
 
 type Rusage C.struct_rusage
@@ -98,28 +118,17 @@ type _Gid_t C.gid_t
 
 // Files
 
-const ( // Directory mode bits
-	S_IFMT   = C.S_IFMT
-	S_IFIFO  = C.S_IFIFO
-	S_IFCHR  = C.S_IFCHR
-	S_IFDIR  = C.S_IFDIR
-	S_IFBLK  = C.S_IFBLK
-	S_IFREG  = C.S_IFREG
-	S_IFLNK  = C.S_IFLNK
-	S_IFSOCK = C.S_IFSOCK
-	S_ISUID  = C.S_ISUID
-	S_ISGID  = C.S_ISGID
-	S_ISVTX  = C.S_ISVTX
-	S_IRUSR  = C.S_IRUSR
-	S_IWUSR  = C.S_IWUSR
-	S_IXUSR  = C.S_IXUSR
-)
-
 type Stat_t C.struct_stat
 
 type Flock_t C.struct_flock
 
 type Dirent C.struct_dirent
+
+// Filesystems
+
+type _Fsblkcnt_t C.fsblkcnt_t
+
+type Statvfs_t C.struct_statvfs
 
 // Sockets
 
@@ -175,6 +184,20 @@ const (
 
 type FdSet C.fd_set
 
+// Misc
+
+type Utsname C.struct_utsname
+
+type Ustat_t C.struct_ustat
+
+const (
+	AT_FDCWD            = C.AT_FDCWD
+	AT_SYMLINK_NOFOLLOW = C.AT_SYMLINK_NOFOLLOW
+	AT_SYMLINK_FOLLOW   = C.AT_SYMLINK_FOLLOW
+	AT_REMOVEDIR        = C.AT_REMOVEDIR
+	AT_EACCESS          = C.AT_EACCESS
+)
+
 // Routing and interface messages
 
 const (
@@ -220,3 +243,24 @@ type BpfHdr C.struct_bpf_hdr
 // Terminal handling
 
 type Termios C.struct_termios
+
+type Termio C.struct_termio
+
+type Winsize C.struct_winsize
+
+// poll
+
+type PollFd C.struct_pollfd
+
+const (
+	POLLERR    = C.POLLERR
+	POLLHUP    = C.POLLHUP
+	POLLIN     = C.POLLIN
+	POLLNVAL   = C.POLLNVAL
+	POLLOUT    = C.POLLOUT
+	POLLPRI    = C.POLLPRI
+	POLLRDBAND = C.POLLRDBAND
+	POLLRDNORM = C.POLLRDNORM
+	POLLWRBAND = C.POLLWRBAND
+	POLLWRNORM = C.POLLWRNORM
+)

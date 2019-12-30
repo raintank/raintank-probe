@@ -7,10 +7,10 @@ import (
 	"sort"
 	"time"
 
+	"github.com/grafana/metrictank/schema"
 	"github.com/raintank/go-pinger"
 	"github.com/raintank/raintank-probe/probe"
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v1"
 )
 
 // Number of pings to send to the host.
@@ -53,7 +53,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.ping.loss", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.ping.loss", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "percent",
 			Mtype:    "gauge",
@@ -66,7 +65,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.ping.min", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.ping.min", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -79,7 +77,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.ping.max", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.ping.max", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -92,7 +89,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.ping.median", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.ping.median", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -105,7 +101,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.ping.mdev", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.ping.mdev", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -118,7 +113,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.ping.mean", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.ping.mean", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -129,7 +123,6 @@ func (r *PingResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Metr
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.ping.default", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.ping.default", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",

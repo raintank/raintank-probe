@@ -3,11 +3,10 @@ package checks
 import (
 	"fmt"
 	"net"
-	"strings"
 	"time"
 
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v1"
+	"github.com/grafana/metrictank/schema"
 )
 
 type CheckResult interface {
@@ -16,26 +15,36 @@ type CheckResult interface {
 }
 
 func ResolveHost(host, ipversion string) (string, error) {
-	addrs, err := net.LookupHost(host)
+	addrs, err := net.LookupIP(host)
 	if err != nil || len(addrs) < 1 {
 		return "", fmt.Errorf("failed to resolve hostname to IP.")
 	}
 
 	for _, addr := range addrs {
+		// only allow Global unicast, or loopback addresses
+		// to be used.
+		if !(addr.IsGlobalUnicast() || addr.IsLoopback()) {
+			continue
+		}
 		if ipversion == "any" {
-			return addr, nil
+			return addr.String(), nil
 		}
 
-		if strings.Contains(addr, ":") || strings.Contains(addr, "%") {
+		if !isIPv4(addr) {
 			if ipversion == "v6" {
-				return addr, nil
+				return addr.String(), nil
 			}
 		} else {
 			if ipversion == "v4" {
-				return addr, nil
+				return addr.String(), nil
 			}
 		}
 	}
 
 	return "", fmt.Errorf("failed to resolve hostname to valid IP.")
+}
+
+func isIPv4(ip net.IP) bool {
+	ip4 := ip.To4()
+	return ip4 != nil
 }

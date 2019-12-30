@@ -20,5 +20,5 @@ mkdir -p $BUILDDIR
 rm -rf $BUILDDIR/*
 
 # Build binary
-cd ../
-go build -ldflags "-X main.GitHash=$GITVERSION" -o $BUILDDIR/raintank-probe
+cd ../cmd/raintank-probe
+go build -mod=vendor -ldflags "-X main.GitHash=$GITVERSION" -o $BUILDDIR/raintank-probe

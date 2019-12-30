@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/metrictank/schema"
 	"github.com/raintank/raintank-probe/probe"
-	"github.com/raintank/worldping-api/pkg/log"
 	m "github.com/raintank/worldping-api/pkg/models"
-	"gopkg.in/raintank/schema.v1"
+	log "github.com/sirupsen/logrus"
 )
 
 // HTTPSResult struct
@@ -49,7 +49,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.dns", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.dns", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -62,7 +61,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.connect", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.connect", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -75,7 +73,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.send", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.send", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -88,7 +85,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.wait", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.wait", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -101,7 +97,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.recv", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.recv", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -114,7 +109,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.total", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.total", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -125,7 +119,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.default", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.default", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "ms",
 			Mtype:    "gauge",
@@ -138,7 +131,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.throughput", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.throughput", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "B/s",
 			Mtype:    "rate",
@@ -151,7 +143,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.dataLength", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.dataLength", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "B",
 			Mtype:    "gauge",
@@ -164,7 +155,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.statusCode", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.statusCode", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "",
 			Mtype:    "gauge",
@@ -177,7 +167,6 @@ func (r *HTTPSResult) Metrics(t time.Time, check *m.CheckWithSlug) []*schema.Met
 		metrics = append(metrics, &schema.MetricData{
 			OrgId:    int(check.OrgId),
 			Name:     fmt.Sprintf("worldping.%s.%s.https.expiry", check.Slug, probe.Self.Slug),
-			Metric:   fmt.Sprintf("worldping.%s.%s.https.expiry", check.Slug, probe.Self.Slug),
 			Interval: int(check.Frequency),
 			Unit:     "",
 			Mtype:    "gauge",
@@ -587,7 +576,7 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 	}
 
 	if certs == nil || len(certs) < 1 {
-		log.Debug("no PeerCertificates for connection to %s", p.Host)
+		log.Debugf("no PeerCertificates for connection to %s", p.Host)
 	} else {
 		timeTilExpiry := certs[0].NotAfter.Sub(time.Now())
 		secondsTilExpiry := float64(timeTilExpiry) / float64(time.Second)
@@ -642,7 +631,7 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 		switch inverse {
 		case true:
 			if rgx.MatchString(decodedBody) {
-				log.Debug("expectRegex %s unexpectedly matched returned body %s", p.ExpectRegex, decodedBody)
+				log.Debugf("expectRegex %s unexpectedly matched returned body %s", p.ExpectRegex, decodedBody)
 
 				msg := "expectRegex unexpectedly matched"
 				result.Error = &msg
@@ -650,7 +639,7 @@ func (p *RaintankProbeHTTPS) Run() (CheckResult, error) {
 			}
 		case false:
 			if !rgx.MatchString(decodedBody) {
-				log.Debug("expectRegex %s did not match returned body %s", p.ExpectRegex, decodedBody)
+				log.Debugf("expectRegex %s did not match returned body %s", p.ExpectRegex, decodedBody)
 
 				msg := "expectRegex did not match"
 				result.Error = &msg
