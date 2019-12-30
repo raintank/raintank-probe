@@ -20,11 +20,10 @@ jobs:
       - checkout
       - run:
           name: unit tests
-          command: go test -v -race $(go list ./... | grep -v /vendor/)
+          command: go test -v -race ./...
       - run:
           name: vet
-          command: go vet $(go list ./... | grep -v /vendor/)
-
+          command: go vet ./...
   deploy:
     docker:
       - image: circleci/ruby:2.3

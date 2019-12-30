@@ -44,8 +44,6 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/procfs v0.0.8 h1:+fpWZdT24pJBiqJdAwYBjPSk+5YmQzYNPYzQsdzLkt8=
 github.com/prometheus/procfs v0.0.8/go.mod h1:7Qr8sr6344vo1JqZ6HhLceV9o3AJ1Ff+GxbHq6oeK9A=
-github.com/raintank/go-pinger v0.0.0-20191223100159-01973d5321e0 h1:SloFfwo0bhnymqiuCHAWL3ycPphzJPr7qcWXWsofqqk=
-github.com/raintank/go-pinger v0.0.0-20191223100159-01973d5321e0/go.mod h1:vOyB6M0U37G4I+oo6cN26cw4bSPFXL6Z+GAqmCUCEE0=
 github.com/raintank/go-pinger v0.0.0-20191223222655-ec2d6f963bab h1:vlYT5UDJYupr4px/6sUYK41IWOWOp9OUZ/n7VMmQDa0=
 github.com/raintank/go-pinger v0.0.0-20191223222655-ec2d6f963bab/go.mod h1:vOyB6M0U37G4I+oo6cN26cw4bSPFXL6Z+GAqmCUCEE0=
 github.com/raintank/metrictank v0.13.1 h1:RVoJFcZzdIHJQp4Urnss0ZJ4w20CT/c+TFBmWbo2Sqc=

@@ -3,25 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net"
-	"net/http"
 	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"os/signal"
-	"path"
 	"runtime"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/grafana/metrictank/stats"
-	gosocketio "github.com/gsocket-io/golang-socketio"
-	"github.com/gsocket-io/golang-socketio/transport"
 	"github.com/raintank/metrictank/logger"
 	"github.com/raintank/raintank-probe/checks"
-	"github.com/raintank/raintank-probe/probe"
+	"github.com/raintank/raintank-probe/controller"
+	"github.com/raintank/raintank-probe/healthz"
 	"github.com/raintank/raintank-probe/publisher"
 	"github.com/raintank/raintank-probe/scheduler"
 	m "github.com/raintank/worldping-api/pkg/models"
@@ -55,12 +50,6 @@ var (
 	healthzListenAddr = flag.String("healthz-listen-addr", "localhost:7180", "address to listen on for healthz http api.")
 
 	MonitorTypes map[string]m.MonitorTypeDTO
-
-	wsTransport = transport.GetDefaultWebsocketTransport()
-
-	// metrics
-	controllerConnected = stats.NewGauge32("controller.connected")
-	eventsReceived      = stats.NewCounterRate32("handlers.events.received")
 )
 
 func main() {
@@ -105,26 +94,6 @@ func main() {
 		log.Fatal("name must be set.")
 	}
 
-	checks.InitPinger()
-
-	jobScheduler := scheduler.New(*healthHosts)
-	go jobScheduler.CheckHealth()
-
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
-
-	controllerUrl, err := url.Parse(*serverAddr)
-	if err != nil {
-		log.Fatalf("unable to parse server-url: %s", err)
-	}
-	controllerUrl.Path = path.Clean(controllerUrl.Path + "/socket.io")
-	version := strings.Split(GitHash, "-")[0]
-	controllerUrl.RawQuery = fmt.Sprintf("EIO=3&transport=websocket&apiKey=%s&name=%s&version=%s", *apiKey, url.QueryEscape(*nodeName), version)
-
-	if controllerUrl.Scheme != "ws" && controllerUrl.Scheme != "wss" {
-		log.Fatalf("invalid server-url.  scheme must be ws or wss. was %s", controllerUrl.Scheme)
-	}
-
 	tsdbUrl, err := url.Parse(*tsdbAddr)
 	if err != nil {
 		log.Fatalf("unable to parse tsdb-url: %s", err)
@@ -134,180 +103,38 @@ func main() {
 	}
 	publisher.Init(tsdbUrl, *apiKey, *concurrency)
 
-	wsTransport.Dialer = &websocket.Dialer{
-		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: time.Minute,
-	}
-	go connectController(controllerUrl, jobScheduler, interrupt, true)
+	// init the GlobalPinger. go-pinger uses raw sockets, so if the process does not have CAP_NET
+	// privileges, the process will panic.
+	checks.InitPinger()
 
-	healthz := NewHealthz(jobScheduler)
-	go healthz.Run()
+	jobScheduler := scheduler.New(*healthHosts)
+	go jobScheduler.CheckHealth()
+
+	healthz := healthz.NewHealthz(jobScheduler, *healthzListenAddr)
+
+	version := strings.Split(GitHash, "-")[0]
+	controllerCfg := &controller.ControllerConfig{
+		ServerAddr:   *serverAddr,
+		ApiKey:       *apiKey,
+		NodeName:     *nodeName,
+		Version:      version,
+		JobScheduler: jobScheduler,
+	}
+	controller := controller.NewController(controllerCfg)
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+
 	//wait for interupt Signal.
 	<-interrupt
-	log.Info("interrupt")
+	log.Info("Shutting down")
+	controller.Stop()
 	healthz.Stop()
 	jobScheduler.Close()
 	publisher.Stop()
 	checks.GlobalPinger.Stop()
 	log.Info("exiting")
 	return
-}
-
-func connectController(controllerUrl *url.URL, jobScheduler *scheduler.Scheduler, interrupt chan os.Signal, failOncConnect bool) {
-	log.Infof("attempting to connect to controller at %s", controllerUrl.Hostname())
-	connected := false
-	controllerConnected.Set(0)
-	var client *gosocketio.Client
-	var err error
-	eventChan := make(chan string, 2)
-	for !connected {
-		client, err = gosocketio.Dial(controllerUrl.String(), wsTransport)
-		if err != nil {
-			log.Error(3, err.Error())
-			if failOncConnect {
-				log.Errorf("unable to connect to controller on url %s: %s", controllerUrl.String(), err)
-				close(interrupt)
-			} else {
-				log.Error("failed to connect to controller. will retry.")
-				time.Sleep(time.Second * 2)
-			}
-		} else {
-			connected = true
-			controllerConnected.Set(1)
-			log.Info("Connected to controller")
-			bindHandlers(client, controllerUrl, jobScheduler, interrupt, eventChan)
-		}
-	}
-
-	maxInactivity := time.Minute * 30
-	timer := time.NewTimer(maxInactivity)
-	for {
-		select {
-		case <-interrupt:
-			client.Close()
-			return
-		case <-timer.C:
-			// we have not received on the notifyRefresh channel.
-			// if the client is alive, close it. Otherwise reconnect
-			if client.IsAlive() {
-				log.Warn("no refresh received for maxInactivity time. disconnecting from controller.")
-				client.Close()
-				// once closed a "disconnected" event will be emitted.
-				// we will then re-establish the connection.
-			} else {
-				go connectController(controllerUrl, jobScheduler, interrupt, false)
-				return
-			}
-		case event := <-eventChan:
-			switch event {
-			case "disconnected":
-				go connectController(controllerUrl, jobScheduler, interrupt, false)
-				return
-			case "refresh":
-				log.Debug("refresh event received on eventChan")
-			}
-		}
-		if !timer.Stop() {
-			<-timer.C
-		}
-		timer.Reset(maxInactivity)
-	}
-}
-
-func bindHandlers(client *gosocketio.Client, controllerUrl *url.URL, jobScheduler *scheduler.Scheduler, interrupt chan os.Signal, eventChan chan string) {
-	if !client.IsAlive() {
-		log.Error("Connection to controller closed before binding handlers.")
-		eventChan <- "disconnected"
-		return
-	}
-	client.On(gosocketio.OnDisconnection, func(c *gosocketio.Channel) {
-		eventsReceived.Inc()
-		log.Error("Disconnected from controller.")
-		eventChan <- "disconnected"
-	})
-	client.On("refresh", func(c *gosocketio.Channel, checks []*m.CheckWithSlug) {
-		eventsReceived.Inc()
-		eventChan <- "refresh"
-		jobScheduler.Refresh(checks)
-	})
-	client.On("created", func(c *gosocketio.Channel, check m.CheckWithSlug) {
-		eventsReceived.Inc()
-		jobScheduler.Create(&check)
-	})
-	client.On("updated", func(c *gosocketio.Channel, check m.CheckWithSlug) {
-		eventsReceived.Inc()
-		jobScheduler.Update(&check)
-	})
-	client.On("removed", func(c *gosocketio.Channel, check m.CheckWithSlug) {
-		eventsReceived.Inc()
-		jobScheduler.Remove(&check)
-	})
-
-	client.On("ready", func(c *gosocketio.Channel, event m.ProbeReadyPayload) {
-		eventsReceived.Inc()
-		log.Infof("server sent ready event. ProbeId=%d", event.Collector.Id)
-		probe.Self = event.Collector
-
-		queryParams := controllerUrl.Query()
-		queryParams["lastSocketId"] = []string{event.SocketId}
-		controllerUrl.RawQuery = queryParams.Encode()
-
-	})
-	client.On("error", func(c *gosocketio.Channel, reason string) {
-		eventsReceived.Inc()
-		log.Errorf("Controller emitted an error. %s", reason)
-		close(interrupt)
-	})
-}
-
-type Healthz struct {
-	listener     net.Listener
-	jobScheduler *scheduler.Scheduler
-}
-
-// runs a HTTP server, accepting requests to /ready and /alive which reports the
-// readiness/liveness of the probe
-func NewHealthz(jobScheduler *scheduler.Scheduler) *Healthz {
-	// define our own listner so we can call Close on it
-	l, err := net.Listen("tcp", *healthzListenAddr)
-	if err != nil {
-		log.Fatal(4, err.Error())
-	}
-	return &Healthz{
-		listener:     l,
-		jobScheduler: jobScheduler,
-	}
-}
-
-func (h *Healthz) Run() {
-	http.HandleFunc("/ready", func(w http.ResponseWriter, r *http.Request) {
-		healthy := h.jobScheduler.IsHealthy()
-		if healthy {
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("OK"))
-		} else {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			w.Write([]byte("Not Ready"))
-		}
-	})
-
-	http.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	})
-
-	srv := http.Server{
-		Addr: *healthzListenAddr,
-	}
-	err := srv.Serve(h.listener)
-	if err != nil {
-		log.Info(err.Error())
-	}
-}
-
-func (h *Healthz) Stop() {
-	h.listener.Close()
-	log.Info("healthz listener closed")
 }
 
 func initLogger(level int) {
