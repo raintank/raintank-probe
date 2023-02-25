@@ -27,7 +27,7 @@ require (
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf // indirect
 	github.com/tinylib/msgp v1.1.0 // indirect
-	golang.org/x/crypto v0.0.0-20191219195013-becbf705a915 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 	gopkg.in/ini.v1 v1.51.0 // indirect
 )
 
