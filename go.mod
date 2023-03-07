@@ -15,7 +15,7 @@ require (
 	github.com/grafana/worldping-gw v0.0.0-20171123145311-b9efdc6e1766
 	github.com/gsocket-io/golang-socketio v0.0.0-20180813042052-054c23d7455a
 	github.com/jpillora/backoff v0.0.0-20170918002102-8eab2debe79d
-	github.com/miekg/dns v0.0.0-20171207171220-3bbde607ac21
+	github.com/miekg/dns v1.1.25
 	github.com/pelletier/go-toml v1.6.0 // indirect
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/prometheus/procfs v0.0.8 // indirect
