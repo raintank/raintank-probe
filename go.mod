@@ -9,7 +9,7 @@ require (
 	github.com/dgryski/go-linlog v0.0.0-20180207191225-edcf2dfd90ff // indirect
 	github.com/glacjay/goini v0.0.0-20161120062552-fd3024d87ee2 // indirect
 	github.com/golang/snappy v0.0.0-20170215233205-553a64147049
-	github.com/gorilla/websocket v0.0.0-20171210035353-cdedf21e585d
+	github.com/gorilla/websocket v1.4.1
 	github.com/grafana/grafana v6.1.6+incompatible // indirect
 	github.com/grafana/metrictank v0.13.1
 	github.com/grafana/worldping-gw v0.0.0-20171123145311-b9efdc6e1766
